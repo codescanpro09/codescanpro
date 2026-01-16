@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codescanpro - AI Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        const GOOGLE_CLIENT_ID = '116443291385-2jpbktc4n9mhbkesdfcjpei4uhri5bcl.apps.googleusercontent.com';
+        const OPENAI_API_KEY = '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';
+
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        glass: {
+                            bg: 'var(--glass-bg)',
+                            panel: 'var(--glass-panel)',
+                            border: 'var(--glass-border)',
+                            text: 'var(--glass-text)',
+                            muted: 'var(--glass-muted)',
+                            primary: 'var(--glass-primary)',
+                            secondary: 'var(--glass-secondary)',
+                            accent: 'var(--glass-accent)',
+                        }
+                    },
+                    animation: {
+                        'gradient-x': 'gradient-x 20s ease infinite',
+                        'float': 'float 8s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        'gradient-x': {
+                            '0%, 100%': {
+                                'background-size': '200% 200%',
+                                'background-position': 'left center'
+                            },
+                            '50%': {
+                                'background-size': '200% 200%',
+                                'background-position': 'right center'
+                            },
+                        },
+                        'float': {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-15px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            /* Light Theme (Default) */
+            --glass-bg: #f8fafc;
+            --glass-panel: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --glass-text: #1e293b;
+            --glass-muted: #64748b;
+            --glass-primary: #0284c7;
+            --glass-secondary: #38bdf8;
+            --glass-accent: #f43f5e;
+            --glass-shadow: rgba(0, 0, 0, 0.05);
+        }
+
+        .dark {
+            /* Cyber Dark Theme */
+            --glass-bg: #0f172a;
+            --glass-panel: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-text: #ffffff;
+            --glass-muted: #cbd5e1;
+            --glass-primary: #38bdf8;
+            --glass-secondary: #0ea5e9;
+            --glass-accent: #f43f5e;
+            --glass-shadow: rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--glass-bg);
+            color: var(--glass-text);
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Glass Utilities */
+        .glass-panel {
+            background: var(--glass-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 40px var(--glass-shadow);
+            transition: all 0.5s ease;
+        }
+
+        .glass-overlay {
+            background: var(--glass-panel);
+            /* Reuse panel or make separate variable if needed */
+            backdrop-filter: blur(12px);
+        }
+
+        .gradient-bg {
+            background: linear-gradient(-45deg, #f0f9ff, #e0f2fe, #f8fafc, #ffffff);
+            background-size: 400% 400%;
+            animation: gradient-x 20s ease infinite;
+        }
+
+        .code-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        pre,
+        code,
+        textarea {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .editor-line-numbers {
+            counter-reset: line;
+        }
+
+        .editor-line-numbers>div::before {
+            counter-increment: line;
+            content: counter(line);
+            color: #64748b;
+            padding-right: 1rem;
+            text-align: right;
+            width: 2rem;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body
+    class="h-screen w-screen overflow-hidden flex flex-col items-center justify-center bg-glass-bg selection:bg-glass-primary/20">
+
+    <!-- LOGIN OVERLAY (Z-INDEX 50) - Covers App until login -->
+    <!-- LOGIN OVERLAY (Interactive Gradient) -->
+    <!-- LOGIN OVERLAY (Clean White Glass) -->
+    <div id="login-overlay"
+        class="fixed inset-0 z-50 gradient-bg flex flex-col items-center justify-center transition-opacity duration-1000">
+        <!-- Floating Elements (Soft Blue Orbs) -->
+        <div class="absolute w-96 h-96 bg-glass-primary/10 rounded-full blur-[100px] -top-20 -left-20 animate-float">
+        </div>
+        <div class="absolute w-[500px] h-[500px] bg-glass-secondary/10 rounded-full blur-[100px] bottom-0 right-0 animate-float"
+            style="animation-delay: 3s;"></div>
+
+        <div
+            class="glass-panel p-12 rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] max-w-md w-full text-center relative z-10 border border-white">
+            <div class="mb-8 flex justify-center">
+                <div
+                    class="bg-white p-6 rounded-2xl shadow-lg text-5xl text-glass-primary flex items-center justify-center w-24 h-24 transform rotate-3">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+            </div>
+
+            <h1 class="text-4xl font-bold text-glass-text mb-3 tracking-tight">Codescan<span
+                    class="text-glass-primary">pro</span></h1>
+            <p class="text-glass-muted mb-10 text-lg font-light">Minimalist AI Development</p>
+
+            <!-- Google Button -->
+            <div class="flex justify-center mb-8">
+                <div id="g_id_onload"
+                    data-client_id="116443291385-gbt26cne11nnujq2m23it9pb8m04ops1.apps.googleusercontent.com"
+                    data-callback="handleCredentialResponse" data-auto_select="false" data-itp_support="true">
+                </div>
+                <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline"
+                    data-text="continue_with" data-shape="pill" data-logo_alignment="left">
+                </div>
+            </div>
+
+            <div class="text-xs text-glass-muted font-mono border-t border-glass-border pt-4">
+                <i class="fa-solid fa-lock text-glass-primary mr-2"></i>SECURED BY GOOGLE
+            </div>
+        </div>
+    </div>
+
+    <!-- SIDEBAR NAVIGATION (Expanded Dashboard Style) -->
+    <div id="app-container"
+        class="flex flex-col md:flex-row w-full h-full md:w-[95%] md:h-[92%] md:rounded-[2rem] glass-panel overflow-hidden shadow-2xl relative z-10">
+
+        <nav
+            class="w-full md:w-72 h-auto md:h-full bg-white/60 md:border-r border-t md:border-t-0 border-glass-border flex flex-row md:flex-col py-2 md:py-8 px-4 gap-1 md:gap-6 shrink-0 relative backdrop-blur-md order-last md:order-first z-40 justify-around md:justify-start">
+            <!-- Brand -->
+            <div class="hidden md:flex items-center gap-4 px-2 mb-4">
+                <div
+                    class="w-10 h-10 bg-gradient-to-br from-glass-primary to-blue-600 rounded-xl flex items-center justify-center text-white text-lg shadow-lg shadow-blue-500/20">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-glass-text tracking-tight">Codescan<span
+                            class="text-glass-primary">pro</span></h1>
+                    <p class="text-[10px] text-glass-muted font-mono uppercase tracking-widest">v2.0 dashboard</p>
+                </div>
+            </div>
+
+            <div class="h-px bg-gradient-to-r from-transparent via-glass-border to-transparent w-full my-1"></div>
+
+            <!-- Nav Items -->
+            <div class="flex flex-row md:flex-col gap-1 md:gap-3 w-full justify-around md:justify-start">
+                <p class="hidden md:block text-[10px] font-bold text-glass-muted uppercase tracking-wider px-4 mb-1">
+                    Menu</p>
+
+                <button onclick="app.setTab('editor')" id="nav-editor"
+                    class="flex-1 md:flex-none w-auto md:w-full h-10 md:h-12 rounded-xl flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-4 px-2 md:px-4 text-glass-text bg-white border border-glass-border shadow-sm transition-all hover:bg-glass-primary hover:text-white hover:shadow-md md:hover:translate-x-1 group text-[10px] md:text-sm font-medium">
+                    <i
+                        class="fa-solid fa-code text-base md:text-lg w-6 text-center md:group-hover:scale-110 transition-transform"></i>
+                    <span>Editor</span>
+                </button>
+
+                <button onclick="app.setTab('results')" id="nav-results"
+                    class="flex-1 md:flex-none w-auto md:w-full h-10 md:h-12 rounded-xl flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-4 px-2 md:px-4 text-glass-muted hover:text-glass-primary transition-all hover:bg-glass-bg md:hover:translate-x-1 group text-[10px] md:text-sm font-medium">
+                    <i class="fa-solid fa-flask text-base md:text-lg w-6 text-center"></i>
+                    <span>Results</span>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button onclick="app.toggleTheme()" id="theme-toggle"
+                    class="flex-1 md:flex-none w-auto md:w-full h-10 md:h-12 rounded-xl flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-4 px-2 md:px-4 text-glass-muted hover:text-glass-primary transition-all hover:bg-glass-bg md:hover:translate-x-1 group text-[10px] md:text-sm font-medium md:mt-2">
+                    <i
+                        class="fa-solid fa-moon text-base md:text-lg w-6 text-center group-hover:rotate-12 transition-transform"></i>
+                    <span class="hidden md:inline">Theme</span>
+                </button>
+            </div>
+
+            <!-- User Profile (Popover Menu) -->
+            <div class="hidden md:block relative group mt-auto">
+                <button onclick="app.toggleProfileMenu()" id="profile-btn"
+                    class="w-full bg-white/50 border border-glass-border rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-white transition-all shadow-sm text-left">
+                    <div id="user-avatar"
+                        class="w-10 h-10 rounded-full bg-glass-bg border border-glass-border flex items-center justify-center text-xs font-bold text-glass-primary overflow-hidden shrink-0 group-hover:ring-2 group-hover:ring-glass-primary/20 transition-all">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="hidden md:block overflow-hidden flex-grow">
+                        <div id="user-name" class="text-sm font-bold text-glass-text truncate">Not Logged In</div>
+                        <div class="text-[10px] text-glass-muted flex items-center gap-1">
+                            <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Online
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right ml-auto text-xs text-glass-muted transition-transform duration-300"
+                        id="profile-chevron"></i>
+                </button>
+
+                <!-- Popover Menu -->
+                <div id="profile-menu"
+                    class="hidden absolute bottom-full left-0 w-full mb-2 bg-white/80 backdrop-blur-md border border-glass-border rounded-xl shadow-xl p-2 z-50 flex-col gap-1 transition-all origin-bottom transform scale-95 opacity-0">
+                    <button onclick="app.logout()"
+                        class="w-full text-left px-4 py-3 rounded-lg hover:bg-red-50 text-glass-text hover:text-red-500 font-medium text-sm flex items-center gap-3 transition-colors">
+                        <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN APP AREA (Inside Container) -->
+        <main class="flex-grow flex flex-col h-full overflow-hidden bg-glass-bg relative">
+
+            <!-- EDITOR TAB -->
+            <div id="tab-editor" class="flex flex-col h-full w-full absolute inset-0 bg-glass-bg">
+                <!-- Top Bar -->
+                <!-- Top Bar -->
+                <header
+                    class="sticky top-0 z-30 h-14 md:h-16 border-b border-glass-border flex items-center px-4 md:px-6 justify-between bg-white/60 backdrop-blur-md shadow-sm transition-all duration-300">
+                    <div class="flex items-center gap-2 md:gap-4 overflow-hidden">
+                        <span id="filename-display"
+                            class="text-xs md:text-sm font-mono text-glass-text font-bold truncate max-w-[120px] md:max-w-none"><i
+                                class="fa-solid fa-file-code mr-2 text-glass-primary"></i>main.py</span>
+                        <span
+                            class="text-[10px] bg-glass-border px-2 py-0.5 rounded text-glass-muted uppercase tracking-wider font-semibold hidden sm:inline-block">Read-Write</span>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="relative group">
+                            <select id="lang-select"
+                                class="appearance-none bg-white/80 border border-glass-border text-xs rounded-lg px-4 py-2 pr-8 focus:outline-none focus:border-glass-primary focus:ring-1 focus:ring-glass-primary text-glass-text transition-all font-medium cursor-pointer hover:bg-glass-bg shadow-sm">
+                                <option value="python">Python</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="java">Java</option>
+                                <option value="c">C / C++</option>
+                                <option value="html">HTML</option>
+                            </select>
+                            <i
+                                class="fa-solid fa-chevron-down absolute right-3 top-2.5 text-xs text-glass-muted pointer-events-none"></i>
+                        </div>
+
+                        <button onclick="app.downloadPDF()"
+                            class="bg-white text-glass-primary border border-glass-border px-4 py-2 rounded-lg text-xs font-bold hover:bg-glass-bg hover:shadow-md transition-all flex items-center gap-2 transform active:scale-95 group">
+                            <i class="fa-solid fa-file-pdf group-hover:scale-110 transition-transform"></i> PDF
+                        </button>
+
+                        <button id="run-btn" onclick="app.runCode()"
+                            class="bg-glass-primary text-white border-none px-6 py-2 rounded-lg text-xs font-bold hover:bg-sky-700 hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95 group backdrop-blur-none">
+                            <i class="fa-solid fa-play group-hover:scale-110 transition-transform"></i> RUN
+                        </button>
+                    </div>
+                </header>
+
+                <div class="flex-grow flex flex-col overflow-y-auto custom-scrollbar">
+
+                    <!-- Code Area -->
+                    <div
+                        class="flex-grow relative flex bg-white code-shadow mx-2 my-2 md:mx-6 md:my-6 rounded-xl md:rounded-2xl overflow-hidden border border-glass-border">
+                        <!-- Line Numbers -->
+                        <div
+                            class="w-10 md:w-14 bg-glass-bg border-r border-glass-border text-right text-[10px] md:text-xs font-mono text-glass-muted py-4 md:py-6 select-none z-10 leading-6 md:leading-7 pr-2 md:pr-4">
+                            1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15
+                        </div>
+                        <!-- Textarea -->
+                        <textarea id="code-input"
+                            class="flex-grow bg-transparent text-glass-text font-mono text-xs md:text-sm p-4 md:p-6 border-none resize-none focus:ring-0 focus:outline-none leading-6 md:leading-7 relative z-10 selection:bg-glass-primary/10 outline-none"
+                            spellcheck="false" placeholder="// Start coding..."># Codescanpro AI Editor
+def main():
+    print("Welcome to Codescanpro")
+    x = 10
+    y = 0
+    # Intentional error for AI to fix
+    result = x / y
+    print(f"Result: {result}")
+
+if __name__ == "__main__":
+    main()</textarea>
+                    </div>
+
+                </div> <!-- End Code Scroll Container -->
+                <div
+                    class="h-16 md:h-20 border-t border-glass-border bg-white flex items-center px-4 md:px-6 gap-4 relative z-20 shadow-[0_-5px_20px_rgba(0,0,0,0.02)] shrink-0">
+                    <button onclick="app.fixCode()"
+                        class="flex-grow md:flex-grow-0 bg-white text-glass-primary px-4 md:px-8 py-2 md:py-3 rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.05)] font-bold text-xs md:text-sm flex items-center justify-center gap-2 md:gap-3 transition-all transform active:scale-95 hover:shadow-lg border border-glass-border hover:-translate-y-1">
+                        <i class="fa-solid fa-wand-magic-sparkles text-glass-accent"></i> AI FIX & ANALYZE
+                    </button>
+                    <div class="hidden md:flex text-xs text-glass-muted ml-auto font-mono gap-6">
+                        <span class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> Live Session
+                        </span>
+                        <span>UTF-8</span>
+                        <span>Ln 10, Col 1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESULTS TAB -->
+            <div id="tab-results"
+                class="hidden flex-col h-full w-full absolute inset-0 bg-glass-bg z-10 overflow-y-auto custom-scrollbar">
+                <header
+                    class="sticky top-0 z-50 h-16 border-b border-glass-border flex items-center px-6 gap-4 bg-white/60 backdrop-blur-md shadow-sm transition-all duration-300">
+                    <button onclick="app.setTab('editor')"
+                        class="text-glass-muted hover:text-glass-primary transition-colors hover:scale-110 transform"><i
+                            class="fa-solid fa-arrow-left text-lg"></i></button>
+                    <h2 class="font-bold text-glass-text tracking-wide">Analysis Results</h2>
+                </header>
+
+                <div class="flex-grow p-6 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-y-auto">
+                    <!-- Console -->
+                    <div
+                        class="glass-panel rounded-2xl overflow-hidden flex flex-col h-96 md:h-auto shadow-xl ring-1 ring-white/50">
+                        <div
+                            class="bg-gray-50 px-5 py-3 text-xs font-bold text-glass-muted border-b border-glass-border flex justify-between items-center">
+                            <span class="flex items-center gap-2"><i
+                                    class="fa-solid fa-terminal text-glass-primary"></i>
+                                Terminal Output</span>
+                            <span class="bg-gray-200 px-2 py-1 rounded text-[10px]">BASH</span>
+                        </div>
+                        <div id="console-output"
+                            class="flex-grow p-5 font-mono text-xs text-glass-text overflow-y-auto whitespace-pre-wrap bg-white/50">
+                            > Waiting for execution...
+                        </div>
+                    </div>
+
+                    <!-- AI Panel -->
+                    <div class="glass-panel rounded-2xl p-8 flex flex-col shadow-xl relative overflow-hidden group">
+                        <div
+                            class="absolute top-0 right-0 p-3 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
+                            <i class="fa-solid fa-robot text-9xl text-glass-primary"></i>
+                        </div>
+
+                        <h3 class="text-lg font-bold text-glass-text mb-6 flex items-center gap-3 relative z-10">
+                            <div class="bg-glass-primary/10 p-2 rounded-lg text-glass-primary"><i
+                                    class="fa-solid fa-brain"></i></div>
+                            AI Diagnosis
+                        </h3>
+
+                        <div id="ai-loading"
+                            class="hidden flex-grow flex flex-col items-center justify-center opacity-70 relative z-10">
+                            <div class="relative w-16 h-16 mb-6">
+                                <div
+                                    class="absolute inset-0 border-4 border-glass-primary/30 rounded-full animate-ping">
+                                </div>
+                                <div class="absolute inset-0 border-t-4 border-glass-primary rounded-full animate-spin">
+                                </div>
+                            </div>
+                            <span class="text-sm text-glass-text animate-pulse font-mono">NEURAL ENGINE
+                                PROCESSING...</span>
+                        </div>
+
+                        <div id="ai-result"
+                            class="flex-grow overflow-y-auto text-sm text-glass-text leading-relaxed opacity-80 relative z-10 custom-scrollbar">
+                            <div class="flex flex-col items-center justify-center h-full text-glass-muted">
+                                <i class="fa-solid fa-microchip text-4xl mb-4 opacity-30"></i>
+                                <p>Run the AI Fix tool to generate a neural report.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div> <!-- End App Container -->
+
+    <!-- Mobile Fallback -->
+    <!-- Mobile Fallback (REMOVED) -->
+    <!-- <div id="mobile-fallback" ... ></div> -->
+
+
+    <script>
+        // GLOBALS
+        const app = {
+            state: {
+                loggedIn: false,
+                currentTab: 'editor',
+                user: null
+            },
+
+            // UI CONTROLS
+            setTab(tabName) {
+                // Toggle active state in nav
+                document.getElementById('nav-editor').classList.toggle('bg-white', tabName === 'editor');
+                document.getElementById('nav-editor').classList.toggle('text-glass-primary', tabName === 'editor');
+                document.getElementById('nav-editor').classList.toggle('text-glass-text', tabName === 'editor');
+                document.getElementById('nav-editor').classList.toggle('border-glass-primary', tabName === 'editor');
+                document.getElementById('nav-editor').classList.toggle('bg-transparent', tabName !== 'editor');
+
+                document.getElementById('nav-results').classList.toggle('bg-white', tabName === 'results');
+                document.getElementById('nav-results').classList.toggle('text-glass-primary', tabName === 'results');
+
+                // Toggle visibility
+                if (tabName === 'editor') {
+                    document.getElementById('tab-editor').classList.remove('hidden');
+                    document.getElementById('tab-results').classList.add('hidden');
+                } else {
+                    document.getElementById('tab-editor').classList.add('hidden');
+                    document.getElementById('tab-results').classList.remove('hidden');
+                    document.getElementById('tab-results').classList.add('flex');
+                }
+            },
+
+            // AUTHENTICATION
+            loginSuccess(payload) {
+                this.state.loggedIn = true;
+                this.state.user = payload;
+
+                // Update Sidebar
+                const name = payload.name || "User";
+                const pic = payload.picture;
+                document.getElementById('user-name').innerText = name;
+                if (pic) {
+                    document.getElementById('user-avatar').innerHTML = `<img src="${pic}" class="w-full h-full object-cover">`;
+                }
+
+                // REVEAL APP: Fade out overlay
+                const overlay = document.getElementById('login-overlay');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    overlay.style.display = 'none'; // Hard remove
+                }, 700);
+            },
+
+            // LOGOUT
+            logout() {
+                if (!this.state.loggedIn) return;
+
+                // Close menu first
+                this.toggleProfileMenu();
+
+                this.state.loggedIn = false;
+                this.state.user = null;
+
+                // Reset Sidebar
+                document.getElementById('user-name').innerText = "Not Logged In";
+                document.getElementById('user-avatar').innerHTML = '<i class="fa-solid fa-user"></i>';
+
+                // BRING BACK OVERLAY
+                const overlay = document.getElementById('login-overlay');
+                overlay.style.display = 'flex';
+                // Trigger reflow
+                void overlay.offsetWidth;
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+            },
+
+            // PROFILE MENU TOGGLE
+            toggleProfileMenu() {
+                const menu = document.getElementById('profile-menu');
+                const chevron = document.getElementById('profile-chevron');
+
+                if (menu.classList.contains('hidden')) {
+                    // OPEN
+                    menu.classList.remove('hidden');
+                    // Slight delay for animation
+                    requestAnimationFrame(() => {
+                        menu.classList.remove('scale-95', 'opacity-0');
+                        menu.classList.add('scale-100', 'opacity-100');
+                    });
+                    if (chevron) chevron.classList.add('-rotate-90');
+                } else {
+                    // CLOSE
+                    menu.classList.remove('scale-100', 'opacity-100');
+                    menu.classList.add('scale-95', 'opacity-0');
+                    if (chevron) chevron.classList.remove('-rotate-90');
+
+                    setTimeout(() => {
+                        menu.classList.add('hidden');
+                    }, 200); // Match transition duration
+                }
+            },
+
+            // THEME TOGGLE
+            toggleTheme() {
+                const body = document.body;
+                body.classList.toggle('dark');
+
+                const isDark = body.classList.contains('dark');
+                localStorage.setItem('codescan_theme', isDark ? 'dark' : 'light');
+
+                this.updateThemeIcon(isDark);
+            },
+
+            updateThemeIcon(isDark) {
+                const btn = document.getElementById('theme-toggle');
+                if (!btn) return;
+
+                if (isDark) {
+                    btn.innerHTML = `<i class="fa-solid fa-sun text-lg w-6 text-center text-yellow-500 group-hover:rotate-90 transition-transform"></i><span class="hidden md:inline">Light Mode</span>`;
+                } else {
+                    btn.innerHTML = `<i class="fa-solid fa-moon text-lg w-6 text-center group-hover:rotate-12 transition-transform"></i><span class="hidden md:inline">Toggle Theme</span>`;
+                }
+            },
+
+            initTheme() {
+                const savedTheme = localStorage.getItem('codescan_theme');
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark');
+                    this.updateThemeIcon(true);
+                }
+            },
+
+            // CODE EXECUTION
+            async runCode() {
+                const code = document.getElementById('code-input').value;
+                const lang = document.getElementById('lang-select').value;
+                const output = document.getElementById('console-output');
+
+                output.innerText = `> Running ${lang} code...\n`;
+
+                // Switch to results tab
+                this.setTab('results');
+
+                try {
+                    // Map our language names to Piston API language names
+                    const languageMap = {
+                        'python': 'python',
+                        'javascript': 'javascript',
+                        'java': 'java',
+                        'c': 'c',
+                        'html': 'html' // HTML will be handled differently
+                    };
+
+                    // For HTML, open in new window instead of executing
+                    if (lang === 'html') {
+                        const blob = new Blob([code], { type: 'text/html' });
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                        output.innerText = `> HTML code opened in new tab\n> Close the tab when done viewing`;
+                        return;
+                    }
+
+                    const pistonLang = languageMap[lang];
+                    if (!pistonLang) {
+                        output.innerText = `> Error: Language '${lang}' not supported for execution`;
+                        return;
+                    }
+
+                    // Call Piston API for code execution
+                    const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            language: pistonLang,
+                            version: '*', // Use latest version
+                            files: [{
+                                content: code
+                            }]
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Execution API error: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+
+                    // Display output
+                    let displayOutput = `> Code executed successfully\n> Language: ${lang}\n\n`;
+
+                    if (result.run) {
+                        if (result.run.stdout) {
+                            displayOutput += `=== OUTPUT ===\n${result.run.stdout}\n`;
+                        }
+                        if (result.run.stderr) {
+                            displayOutput += `\n=== ERRORS ===\n${result.run.stderr}\n`;
+                        }
+                        if (result.run.code !== 0) {
+                            displayOutput += `\n> Exit code: ${result.run.code}`;
+                        }
+                        if (!result.run.stdout && !result.run.stderr) {
+                            displayOutput += `> No output produced`;
+                        }
+                    } else {
+                        displayOutput += `> Execution completed with no output`;
+                    }
+
+                    output.innerText = displayOutput;
+
+                } catch (error) {
+                    console.error('Execution error:', error);
+                    output.innerText = `> Execution failed\n> Error: ${error.message}\n\n> Please check your code and try again.`;
+                }
+            },
+
+            // AI FIX CODE
+            async fixCode() {
+                const code = document.getElementById('code-input').value;
+                const lang = document.getElementById('lang-select').value;
+
+                const aiResult = document.getElementById('ai-result');
+                const aiLoading = document.getElementById('ai-loading');
+
+                // Show loading
+                aiResult.classList.add('hidden');
+                aiLoading.classList.remove('hidden');
+
+                // Switch to results tab
+                this.setTab('results');
+
+                try {
+                    console.log('Starting AI analysis...');
+
+                    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${OPENAI_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: 'gpt-4o-mini',
+                            messages: [{
+                                role: 'user',
+                                content: `You are an expert code analyzer and debugger. Analyze the following ${lang} code carefully.
+
+**Your task:**
+1. Identify ALL bugs, errors, syntax issues, and potential problems
+2. Provide the COMPLETE corrected code (not just snippets)
+3. Explain what was wrong and how you fixed it
+
+
+**Code to analyze:**
+\`\`\`${lang}
+${code}
+\`\`\`
+
+**Response format (use exactly these headers):**
+
+## Issues Found
+- List each issue clearly
+
+## Fixed Code
+\`\`\`${lang}
+[Provide the COMPLETE working code here - include ALL lines, not just the fixed parts]
+\`\`\`
+
+## Explanation
+- Explain each fix in detail
+
+IMPORTANT: The "Fixed Code" section must contain the ENTIRE working program, not just the corrected lines.`
+                            }],
+                            max_tokens: 3000,
+                            temperature: 0.7
+                        })
+                    });
+
+                    console.log('Response status:', response.status);
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        console.error('API Error:', errorData);
+                        throw new Error(`API Error (${response.status}): ${errorData.error?.message || 'Unknown error'}`);
+                    }
+
+                    const data = await response.json();
+                    console.log('API Response:', data);
+
+                    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                        throw new Error('Invalid API response structure');
+                    }
+
+                    const aiText = data.choices[0].message.content;
+
+                    if (!aiText || aiText.trim() === '') {
+                        throw new Error('AI returned empty response');
+                    }
+
+                    // Extract fixed code from response
+                    const codeBlockRegex = /```(?:\w+)?\s*([\s\S]*?)```/g;
+                    const matches = [...aiText.matchAll(codeBlockRegex)];
+                    let fixedCode = null;
+
+                    if (matches.length > 0) {
+                        for (const match of matches) {
+                            const code = match[1].trim();
+                            const beforeMatch = aiText.substring(0, match.index).toLowerCase();
+                            if (beforeMatch.includes('fixed') || beforeMatch.includes('corrected')) {
+                                fixedCode = code;
+                                break;
+                            }
+                        }
+                        if (!fixedCode && matches.length > 0) {
+                            fixedCode = matches[matches.length - 1][1].trim();
+                        }
+                    }
+
+                    // Hide loading, show result
+                    aiLoading.classList.add('hidden');
+                    aiResult.classList.remove('hidden');
+
+                    // Parse markdown and display
+                    let displayHTML = marked.parse(aiText);
+
+                    // Add apply button if fixed code found
+                    if (fixedCode) {
+                        this.state.fixedCode = fixedCode;
+                        displayHTML = `<div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+        <div class="flex items-center gap-2 text-green-700">
+            <i class="fa-solid fa-circle-check"></i>
+            <span class="font-semibold text-sm">Fixed code detected!</span>
+        </div>
+        <button onclick="app.applyFixedCode()" 
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 shadow-sm hover:shadow-md active:scale-95">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Apply Fix to Editor
+        </button>
+    </div>` + displayHTML;
+                    }
+
+                    aiResult.innerHTML = displayHTML;
+
+                } catch (error) {
+                    console.error('AI Analysis Error:', error);
+                    aiLoading.classList.add('hidden');
+                    aiResult.classList.remove('hidden');
+
+                    let errorMessage = `<div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <h4 class="font-bold text-red-700 mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation"></i> AI Analysis Failed
+                        </h4>
+                        <p class="text-red-600 text-sm mb-2"><strong>Error:</strong> ${error.message}</p>`;
+
+                    if (error.message.includes('401') || error.message.includes('Incorrect API key')) {
+                        errorMessage += `<p class="text-red-600 text-sm">⚠️ <strong>API Key Issue:</strong> Your OpenAI API key is invalid or expired.</p>`;
+                    } else if (error.message.includes('429')) {
+                        errorMessage += `<p class="text-red-600 text-sm">⚠️ <strong>Rate Limit:</strong> Too many requests. Please wait a moment.</p>`;
+                    } else if (error.message.includes('quota')) {
+                        errorMessage += `<p class="text-red-600 text-sm">⚠️ <strong>Quota Exceeded:</strong> Your OpenAI account has exceeded its quota.</p>`;
+                    }
+
+                    errorMessage += `<p class="text-xs text-red-500 mt-2">Check the browser console for more details.</p></div>`;
+
+                    aiResult.innerHTML = errorMessage;
+                }
+            },
+
+            // DOWNLOAD CODE FILE
+            async downloadPDF() {
+                const code = document.getElementById('code-input').value;
+                const lang = document.getElementById('lang-select').value;
+
+                // Get the appropriate filename based on language
+                const filename = this.getFilenameForLanguage(lang);
+
+                // Create a blob with the code content
+                const blob = new Blob([code], { type: 'text/plain' });
+
+                // Create download link
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+
+                // Trigger download
+                document.body.appendChild(a);
+                a.click();
+
+                // Cleanup
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            },
+
+            // Get filename based on language
+            getFilenameForLanguage(lang) {
+                const extensions = {
+                    'python': 'main.py',
+                    'javascript': 'main.js',
+                    'java': 'Main.java',
+                    'c': 'main.c',
+                    'html': 'index.html'
+                };
+                return extensions[lang] || 'main.txt';
+            },
+
+            // Update filename display
+            updateFilenameDisplay(lang) {
+                const filename = this.getFilenameForLanguage(lang);
+                const display = document.getElementById('filename-display');
+                if (display) {
+                    display.innerHTML = `<i class="fa-solid fa-file-code mr-2 text-glass-primary"></i>${filename}`;
+                }
+            },
+
+            // Apply fixed code to editor
+            applyFixedCode() {
+                if (!this.state.fixedCode) {
+                    alert('No fixed code available');
+                    return;
+                }
+
+                const editor = document.getElementById('code-input');
+                editor.value = this.state.fixedCode;
+
+                // Switch back to editor tab
+                this.setTab('editor');
+
+                // Show success notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-20 right-6 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-3';
+                notification.innerHTML = `
+                    <i class="fa-solid fa-check-circle text-xl"></i>
+                    <span class="font-semibold">Fixed code applied to editor!</span>
+                `;
+                document.body.appendChild(notification);
+
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    notification.style.transition = 'opacity 0.3s';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+        };
+
+        // GOOGLE SIGN-IN CALLBACK
+        function handleCredentialResponse(response) {
+            try {
+                const credential = response.credential;
+                const base64Url = credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+
+                const payload = JSON.parse(jsonPayload);
+
+                // Trigger App Logic
+                app.loginSuccess(payload);
+
+            } catch (e) {
+                alert("Login Critical Error: " + e.message);
+                console.error(e);
+            }
+        }
+
+        // Initialize Theme on load
+        app.initTheme();
+
+        // Language Selector Logic (Clear Editor on Change)
+        document.getElementById('lang-select').addEventListener('change', (e) => {
+            const editor = document.getElementById('code-input');
+            const lang = e.target.value;
+            editor.value = ""; // Clear editor as requested
+            app.updateFilenameDisplay(lang); // Update filename display
+        });
+
+    </script>
+</body>
+
+</html>

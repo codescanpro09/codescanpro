@@ -1,0 +1,2602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codescanpro - AI Editor</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1118'/%3E%3Cpath d='M16 4l12 6-12 6-12-6z' fill='%2300d4ff'/%3E%3Cpath d='M4 14l12 6 12-6' stroke='%2300d4ff' stroke-width='2' fill='none'/%3E%3Cpath d='M4 20l12 6 12-6' stroke='%2300d4ff' stroke-width='2' fill='none' opacity='0.6'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script>
+        const GOOGLE_CLIENT_ID = '865160055369-s79au08k5tkg7khs6i1848gc31jdrrp2.apps.googleusercontent.com';
+
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            bg: '#05090e',
+                            panel: '#0b1118',
+                            border: 'rgba(255, 255, 255, 0.05)',
+                            primary: '#00f5ff',
+                            secondary: '#0083fe',
+                            accent: '#ff4d4d',
+                            text: '#f8fafc',
+                            muted: '#94a3b8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Dark Theme (Default) */
+        :root {
+            --bg: #05090e;
+            --panel: #0b1118;
+            --border: rgba(255, 255, 255, 0.08);
+            --primary: #00f5ff;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --editor-bg: #080c12;
+            --glass-bg: rgba(11, 17, 24, 0.8);
+            --stat-bg: rgba(255, 255, 255, 0.03);
+            --stat-border: rgba(255, 255, 255, 0.05);
+            --sidebar-bg: #0b1118;
+        }
+
+        /* Light Theme - Enhanced Premium Design */
+        body.light-theme {
+            --bg: #fafbfc;
+            --panel: #ffffff;
+            --border: rgba(0, 0, 0, 0.06);
+            --primary: #00d4ff;
+            --text: #0f1419;
+            --muted: #57606a;
+            --editor-bg: #ffffff;
+            --glass-bg: #ffffff;
+            --stat-bg: #ffffff;
+            --stat-border: rgba(0, 0, 0, 0.05);
+            --sidebar-bg: #ffffff;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.light-theme {
+            background: #fafbfc;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.light-theme .glass-card {
+            background: #ffffff;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        /* HYPER-GLASS UPGRADE */
+        /* Deep Gradient Background (Dark Mode Only) */
+        body:not(.light-theme) {
+            background-color: #020408;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(0, 212, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(112, 0, 255, 0.06) 0%, transparent 40%);
+        }
+
+        /* Glass Panels (Sidebar, Header, Modals) */
+        body:not(.light-theme) aside,
+        body:not(.light-theme) header,
+        body:not(.light-theme) #new-tab-modal>div,
+        body:not(.light-theme) #login-overlay .glass-card {
+            background: rgba(11, 17, 24, 0.45) !important;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            /* Sidebar border */
+        }
+
+        body:not(.light-theme) header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            border-right: none;
+        }
+
+        /* Enhanced Stats Cards */
+        body:not(.light-theme) .glass-card {
+            background: rgba(255, 255, 255, 0.02) !important;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        body:not(.light-theme) .glass-card:hover {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -5px rgba(0, 212, 255, 0.1);
+        }
+
+        body.light-theme .glass-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ZEN MODE */
+        body.zen-mode aside {
+            display: none;
+        }
+
+        body.zen-mode header {
+            display: none;
+        }
+
+        body.zen-mode main {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        body.zen-mode #tab-editor {
+            height: 100%;
+        }
+
+        .zen-exit-hint {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 60;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.5rem 1rem;
+            border-radius: 99px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        body.zen-mode .zen-exit-hint {
+            opacity: 1;
+            animation: fadeOut 3s forwards 2s;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+            }
+        }
+
+        /* GHOST TEXT */
+        .ghost-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            color: rgba(255, 255, 255, 0.3);
+            font-family: 'JetBrains Mono', monospace;
+            white-space: pre;
+            overflow: hidden;
+            margin: 0;
+            padding: 1.5rem 1rem;
+            /* Match textarea padding */
+            font-size: 14px;
+            line-height: 1.5;
+            background: transparent;
+            z-index: 15;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--muted);
+            border-radius: 10px;
+            opacity: 0.5;
+        }
+
+        body.light-theme .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+        }
+
+        body.light-theme .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        .nav-item-active {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--primary);
+            box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.light-theme .nav-item-active {
+            background: rgba(0, 212, 255, 0.12);
+            color: #00d4ff;
+            box-shadow: none;
+        }
+
+        .editor-container {
+            background: var(--editor-bg);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.light-theme .editor-container {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card {
+            background: var(--stat-bg);
+            border: 1px solid var(--stat-border);
+            border-radius: 16px;
+            padding: 12px 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.light-theme .stat-card {
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        body.light-theme .stat-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        /* Sidebar styling for light theme - WHITE SIDEBAR */
+        body.light-theme aside {
+            background: #ffffff !important;
+            border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
+            box-shadow: 1px 0 3px rgba(0, 0, 0, 0.04);
+        }
+
+        body.light-theme aside .text-white {
+            color: #0f1419 !important;
+        }
+
+        body.light-theme aside .text-brand-muted {
+            color: #57606a !important;
+        }
+
+        body.light-theme aside .bg-white\/5 {
+            background-color: rgba(0, 0, 0, 0.03) !important;
+        }
+
+        body.light-theme aside .hover\:bg-white\/5:hover {
+            background-color: rgba(0, 0, 0, 0.05) !important;
+        }
+
+        body.light-theme aside .border-white\/10 {
+            border-color: rgba(0, 0, 0, 0.06) !important;
+        }
+
+        /* Main content area for light theme */
+        body.light-theme main {
+            background: transparent !important;
+        }
+
+        /* Text color adjustments */
+        body.light-theme .text-brand-text,
+        body.light-theme .text-white {
+            color: #0f1419 !important;
+        }
+
+        body.light-theme .text-brand-muted {
+            color: #57606a !important;
+        }
+
+        body.light-theme .text-brand-primary {
+            color: #00d4ff !important;
+        }
+
+        /* Border adjustments */
+        body.light-theme .border-brand-border,
+        body.light-theme .border-white\/5,
+        body.light-theme .border-white\/10 {
+            border-color: rgba(0, 0, 0, 0.06) !important;
+        }
+
+        /* Background adjustments */
+        body.light-theme .bg-brand-panel {
+            background-color: #ffffff !important;
+        }
+
+        body.light-theme .bg-white\/5 {
+            background-color: rgba(0, 0, 0, 0.02) !important;
+        }
+
+        body.light-theme .bg-white\/10 {
+            background-color: rgba(0, 0, 0, 0.04) !important;
+        }
+
+        body.light-theme .bg-brand-bg {
+            background-color: #fafbfc !important;
+        }
+
+        /* Code editor text color in light theme */
+        body.light-theme #code-input {
+            color: #0f1419 !important;
+            background: #ffffff !important;
+        }
+
+        body.light-theme #code-input::placeholder {
+            color: #57606a !important;
+        }
+
+        /* Line numbers in light theme */
+        body.light-theme .line-number {
+            color: #57606a !important;
+        }
+
+        /* Login overlay in light theme */
+        body.light-theme #login-overlay {
+            background: #fafbfc !important;
+        }
+
+        /* Header and navigation in light theme */
+        body.light-theme h1,
+        body.light-theme h2,
+        body.light-theme h3,
+        body.light-theme h4 {
+            color: #0f1419 !important;
+        }
+
+        /* Button adjustments for light theme */
+        body.light-theme .bg-brand-primary {
+            background-color: #00d4ff !important;
+            color: #000000 !important;
+        }
+
+        body.light-theme .bg-brand-primary:hover {
+            background-color: #00bfea !important;
+        }
+
+        body.light-theme .text-brand-primary {
+            color: #00d4ff !important;
+        }
+
+        /* Improved button styles */
+        body.light-theme button {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.light-theme button:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Rose/Danger colors in light theme */
+        body.light-theme .bg-rose-500\/10 {
+            background-color: rgba(244, 63, 94, 0.06) !important;
+        }
+
+        body.light-theme .border-rose-500\/20 {
+            border-color: rgba(244, 63, 94, 0.12) !important;
+        }
+
+        body.light-theme .text-rose-500 {
+            color: #dc2626 !important;
+        }
+
+        body.light-theme .bg-rose-500\/20 {
+            background-color: rgba(244, 63, 94, 0.12) !important;
+        }
+
+        body.light-theme .bg-rose-500\/20:hover {
+            background-color: rgba(244, 63, 94, 0.18) !important;
+        }
+
+        /* Emerald/Success colors in light theme */
+        body.light-theme .bg-emerald-500 {
+            background-color: #10b981 !important;
+        }
+
+        /* Input fields in light theme */
+        body.light-theme input,
+        body.light-theme select,
+        body.light-theme textarea {
+            background-color: #ffffff !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+            color: #0f1419 !important;
+        }
+
+        body.light-theme input:focus,
+        body.light-theme select:focus,
+        body.light-theme textarea:focus {
+            border-color: #00d4ff !important;
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1) !important;
+        }
+
+        /* Language dropdown in light theme */
+        body.light-theme #lang-dropdown {
+            background: #ffffff !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        body.light-theme #lang-dropdown button {
+            color: #0f1419 !important;
+            border-color: rgba(0, 0, 0, 0.05) !important;
+        }
+
+        body.light-theme #lang-dropdown button:hover {
+            background-color: rgba(0, 212, 255, 0.08) !important;
+            color: #00d4ff !important;
+        }
+
+        body.light-theme #lang-select-btn {
+            color: #0f1419 !important;
+        }
+
+        body.light-theme #lang-select-btn:hover {
+            background-color: rgba(0, 0, 0, 0.04) !important;
+        }
+
+        /* Syntax Highlighting Colors */
+        .token.comment {
+            color: #6a9955;
+            font-style: italic;
+        }
+
+        .token.keyword {
+            color: #569cd6;
+            font-weight: bold;
+        }
+
+        .token.string {
+            color: #ce9178;
+        }
+
+        .token.number {
+            color: #b5cea8;
+        }
+
+        .token.function {
+            color: #dcdcaa;
+        }
+
+        .token.class-name {
+            color: #4ec9b0;
+        }
+
+        .token.operator {
+            color: #d4d4d4;
+        }
+
+        .token.variable {
+            color: #9cdcfe;
+        }
+
+        .token.builtin {
+            color: #c586c0;
+        }
+
+        /* Light Theme Syntax */
+        body.light-theme .token.keyword {
+            color: #0000ff;
+        }
+
+        body.light-theme .token.string {
+            color: #a31515;
+        }
+
+        body.light-theme .token.comment {
+            color: #008000;
+        }
+
+        body.light-theme .token.function {
+            color: #795e26;
+        }
+
+        body.light-theme .token.class-name {
+            color: #267f99;
+        }
+
+        body.light-theme .token.number {
+            color: #098658;
+        }
+
+        /* Ensure Textarea Selection is visible */
+        textarea::selection {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        @keyframes pulse-glow {
+            0% {
+                box-shadow: 0 0 5px rgba(0, 212, 255, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+            }
+
+            100% {
+                box-shadow: 0 0 5px rgba(0, 212, 255, 0.3);
+            }
+        }
+
+        .animate-glow {
+            animation: pulse-glow 3s infinite;
+        }
+    </style>
+</head>
+
+<body class="h-screen w-screen selection:bg-brand-primary/20">
+
+    <!-- Zen Exit Hint -->
+    <div class="zen-exit-hint">Press ESC to exit Zen Mode</div>
+
+    <!-- LOGIN OVERLAY -->
+    <div id="login-overlay"
+        class="fixed inset-0 z-[100] bg-[#03070c] flex flex-col items-center justify-center p-6 transition-opacity duration-700">
+        <div class="absolute w-[600px] h-[600px] bg-brand-primary/5 rounded-full blur-[120px]"></div>
+
+        <div class="mb-10 text-center">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#00f5ff" />
+                    <path d="M2 17L12 22L22 17" stroke="#00f5ff" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M2 12L12 17L22 12" stroke="#00f5ff" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+                <h1 class="text-2xl font-bold tracking-tighter">CODESCAN<span class="text-brand-primary">PRO</span></h1>
+            </div>
+        </div>
+
+        <div class="glass-card p-12 max-w-md w-full border border-white/5 shadow-2xl relative overflow-hidden">
+            <h2 class="text-3xl font-bold mb-3 text-center">Welcome back</h2>
+            <p class="text-brand-muted text-center mb-12 text-sm">Sign in to access your development workspace</p>
+
+            <div class="flex flex-col gap-4">
+                <div id="g_id_onload"
+                    data-client_id="865160055369-s79au08k5tkg7khs6i1848gc31jdrrp2.apps.googleusercontent.com"
+                    data-callback="handleCredentialResponse" data-auto_select="false" data-itp_support="true">
+                </div>
+                <div class="g_id_signin flex justify-center" data-type="standard" data-size="large"
+                    data-theme="filled_black" data-text="continue_with" data-shape="rectangular"
+                    data-logo_alignment="left" data-width="360">
+                </div>
+            </div>
+
+            <div class="mt-8 pt-8 border-t border-white/5">
+                <p class="text-xs text-brand-muted text-center">
+                    By signing in, you agree to our
+                    <a href="#" class="text-brand-primary hover:underline">Terms of Service</a> and
+                    <a href="#" class="text-brand-primary hover:underline">Privacy Policy</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-20 text-[10px] text-brand-muted flex gap-8 font-mono tracking-widest uppercase opacity-40">
+            <span>© 2024 CODESCANPRO AI</span>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+        </div>
+    </div>
+
+    <!-- SIDEBAR NAVIGATION (Expanded Dashboard Style) -->
+    <div id="app-container"
+        class="flex w-screen h-screen bg-brand-bg text-brand-text overflow-hidden relative z-10 transition-all duration-500">
+
+        <!-- SIDEBAR -->
+        <aside
+            class="w-20 md:w-64 border-r border-brand-border flex flex-col items-center md:items-stretch py-8 px-4 gap-8 bg-brand-panel/50 backdrop-blur-xl shrink-0">
+            <div class="flex items-center gap-3 px-2 mb-4">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#00f5ff" />
+                    <path d="M2 17L12 22L22 17" stroke="#00f5ff" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M2 12L12 17L22 12" stroke="#00f5ff" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+                <div class="hidden md:block">
+                    <h1 class="text-sm font-bold tracking-tighter">CODESCAN<span class="text-brand-primary">PRO</span>
+                    </h1>
+                </div>
+            </div>
+
+            <nav class="flex flex-col gap-2 w-full">
+                <button onclick="app.setTab('editor')" id="nav-editor"
+                    class="flex items-center gap-4 px-4 py-3 rounded-2xl text-sm font-bold transition-all nav-item-active">
+                    <i class="fa-solid fa-code w-5"></i>
+                    <span class="hidden md:inline">Editor</span>
+                </button>
+                <button onclick="app.setTab('results')" id="nav-results"
+                    class="flex items-center gap-4 px-4 py-3 rounded-2xl text-sm font-bold transition-all text-brand-muted hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-bolt w-5"></i>
+                    <span class="hidden md:inline">Security Analysis</span>
+                </button>
+                <button onclick="app.setTab('settings')" id="nav-settings"
+                    class="flex items-center gap-4 px-4 py-3 rounded-2xl text-sm font-bold transition-all text-brand-muted hover:bg-white/5 hover:text-white">
+                    <i class="fa-solid fa-gear w-5"></i>
+                    <span class="hidden md:inline">Settings</span>
+                </button>
+            </nav>
+
+            <div class="mt-auto">
+                <div id="profile-btn" onclick="app.toggleProfileMenu()"
+                    class="flex items-center gap-3 p-3 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 cursor-pointer transition-all">
+                    <div id="user-avatar"
+                        class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-primary/20 to-brand-secondary/20 flex items-center justify-center text-xs font-bold ring-1 ring-brand-primary/30">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="hidden md:block overflow-hidden">
+                        <p id="user-name" class="text-xs font-bold truncate">Alex Rivera</p>
+                        <p class="text-[10px] text-brand-muted">Pro Plan</p>
+                    </div>
+                </div>
+                <!-- Profile Menu Popover -->
+                <div id="profile-menu"
+                    class="hidden absolute left-4 bottom-24 w-56 glass-card p-2 border border-white/10 shadow-2xl z-[60]">
+                    <button onclick="app.logout()"
+                        class="w-full text-left px-4 py-3 rounded-xl hover:bg-red-500/10 text-brand-muted hover:text-red-400 font-bold text-xs flex items-center gap-3 transition-all">
+                        <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-grow flex flex-col h-full bg-[#03070c] relative">
+
+            <!-- EDITOR TAB -->
+            <div id="tab-editor" class="flex flex-col h-full w-full absolute inset-0">
+                <!-- Top Header: Project & Actions -->
+                <header
+                    class="h-14 flex items-center justify-between px-6 border-b border-brand-border shrink-0 bg-brand-panel/30">
+                    <div class="flex items-center gap-4">
+                        <!-- Project Selector -->
+                        <button
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-primary/10 text-brand-primary border border-brand-primary/20 text-xs font-bold hover:bg-brand-primary/20 transition-all">
+                            <i class="fa-solid fa-file-invoice"></i>
+                            <span>Project: API Core</span>
+                        </button>
+
+                        <!-- Language Selector -->
+                        <div class="relative group">
+                            <button id="lang-select-btn" onclick="app.toggleLanguageDropdown()"
+                                class="bg-transparent text-xs font-bold text-brand-text border-none p-2 px-3 focus:ring-0 cursor-pointer hover:bg-white/5 rounded-lg transition-all flex items-center gap-2">
+                                <span id="lang-select-display">Python</span>
+                                <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                            </button>
+                            <div id="lang-dropdown"
+                                class="hidden absolute top-full left-0 mt-2 bg-[#0b1118] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 min-w-[160px]">
+                                <button onclick="app.selectLanguage('python', 'Python')"
+                                    class="w-full text-left px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-primary/10 hover:text-brand-primary transition-all border-b border-white/5">
+                                    Python
+                                </button>
+                                <button onclick="app.selectLanguage('javascript', 'JavaScript')"
+                                    class="w-full text-left px-4 py-3 text-xs font-bold text-brand-muted hover:bg-brand-primary/10 hover:text-brand-primary transition-all border-b border-white/5">
+                                    JavaScript
+                                </button>
+                                <button onclick="app.selectLanguage('java', 'Java')"
+                                    class="w-full text-left px-4 py-3 text-xs font-bold text-brand-muted hover:bg-brand-primary/10 hover:text-brand-primary transition-all border-b border-white/5">
+                                    Java
+                                </button>
+                                <button onclick="app.selectLanguage('c', 'C / C++')"
+                                    class="w-full text-left px-4 py-3 text-xs font-bold text-brand-muted hover:bg-brand-primary/10 hover:text-brand-primary transition-all border-b border-white/5">
+                                    C / C++
+                                </button>
+                                <button onclick="app.selectLanguage('html', 'HTML')"
+                                    class="w-full text-left px-4 py-3 text-xs font-bold text-brand-muted hover:bg-brand-primary/10 hover:text-brand-primary transition-all">
+                                    HTML
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-6">
+                        <div class="flex items-center gap-2">
+                            <button onclick="app.toggleStructureView()" title="Structure View"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-white/5 transition-all"><i
+                                    class="fa-solid fa-shapes"></i></button>
+                            <button onclick="app.setTab('settings')" title="Settings"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-white/5 transition-all"><i
+                                    class="fa-solid fa-gear"></i></button>
+                            <button onclick="app.toggleZenMode()" title="Zen Mode"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-white/5 transition-all"><i
+                                    class="fa-solid fa-infinity"></i></button>
+                            <button onclick="app.toggleFullscreen()" title="Toggle Fullscreen"
+                                class="w-8 h-8 rounded-lg flex items-center justify-center text-brand-muted hover:text-brand-text hover:bg-white/5 transition-all"><i
+                                    class="fa-solid fa-expand"></i></button>
+                        </div>
+
+                        <button onclick="app.exportFile()"
+                            class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-white text-xs font-bold hover:bg-white/10 transition-all border border-white/5 shadow-sm mr-2">
+                            <i class="fa-solid fa-share-nodes"></i>
+                            <span>Export</span>
+                        </button>
+
+                        <button id="run-btn" onclick="app.runCode()"
+                            class="bg-brand-primary text-black px-6 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-[0_0_15px_rgba(0,212,255,0.3)]">
+                            <i class="fa-solid fa-bolt"></i> RUN SCAN
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Browser Tab Bar -->
+                <div
+                    class="h-10 flex items-end px-2 bg-brand-panel/20 border-b border-brand-border shrink-0 gap-1 overflow-x-auto custom-scrollbar-hide">
+                    <!-- Active Tab -->
+                    <div onclick="app.switchTab('auth')" id="tab-auth"
+                        class="group relative px-4 py-2 bg-brand-bg rounded-t-lg border-t border-x border-brand-border text-xs font-bold flex items-center gap-3 cursor-pointer select-none min-w-[180px] text-brand-text shadow-sm translate-y-[1px] z-10">
+                        <i class="fa-solid fa-file-code text-brand-primary"></i>
+                        <span class="truncate">AuthenticationModule.py</span>
+                        <i
+                            class="fa-solid fa-xmark ml-auto opacity-0 group-hover:opacity-60 hover:!opacity-100 p-1 rounded-md hover:bg-white/10 transition-all"></i>
+                    </div>
+
+                    <!-- Inactive Tabs -->
+                    <div onclick="app.switchTab('storage')" id="tab-db"
+                        class="group relative px-4 py-2 text-brand-muted hover:text-brand-text hover:bg-white/5 rounded-t-lg border-t border-x border-transparent hover:border-white/5 text-xs font-medium flex items-center gap-3 cursor-pointer select-none min-w-[160px] transition-all">
+                        <i class="fa-brands fa-js text-yellow-500"></i>
+                        <span class="truncate">StorageHandler.js</span>
+                    </div>
+
+                    <div onclick="app.switchTab('dbutils')" id="tab-config"
+                        class="group relative px-4 py-2 text-brand-muted hover:text-brand-text hover:bg-white/5 rounded-t-lg border-t border-x border-transparent hover:border-white/5 text-xs font-medium flex items-center gap-3 cursor-pointer select-none min-w-[160px] transition-all">
+                        <i class="fa-brands fa-golang text-cyan-500"></i>
+                        <span class="truncate">DatabaseUtils.go</span>
+                        <i
+                            class="fa-solid fa-xmark ml-auto opacity-0 group-hover:opacity-50 hover:!opacity-100 text-[10px]"></i>
+                    </div>
+
+                    <!-- New Tab Button -->
+                    <div
+                        class="w-8 h-8 mb-1 flex items-center justify-center rounded-lg text-brand-muted hover:text-brand-text hover:bg-white/5 cursor-pointer transition-all ml-1">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- Editor Content Container (Rest stays same but padding adjusted) -->
+                <div class="flex-grow p-0 flex flex-col overflow-hidden bg-brand-bg relative z-0">
+                    <div
+                        class="flex-grow editor-container relative overflow-hidden flex flex-row m-4 mt-6 border border-brand-border rounded-xl bg-brand-bg shadow-sm">
+                        <!-- Line Numbers -->
+                        <div id="line-numbers-container"
+                            class="w-12 border-r border-white/5 bg-brand-panel/20 overflow-hidden pt-6 shrink-0 z-10">
+                            <div id="line-numbers"
+                                class="text-right text-[10px] font-mono text-brand-muted/40 pr-3 select-none"
+                                style="line-height: 28px;">
+                                1
+                            </div>
+                        </div>
+
+                        <!-- Editor Area -->
+                        <div class="relative flex-grow h-full overflow-hidden">
+                            <!-- Syntax Highlighter Output -->
+                            <pre id="highlight-layer" aria-hidden="true"
+                                class="absolute inset-0 w-full h-full m-0 pt-6 px-6 font-mono text-sm pointer-events-none custom-scrollbar overflow-y-auto"
+                                style="line-height: 28px;"><code id="highlight-code" class="language-python"></code></pre>
+
+                            <!-- Ghost Text Layer -->
+                            <div id="ghost-text"
+                                class="ghost-overlay absolute inset-0 w-full h-full m-0 pt-6 px-6 font-mono text-sm pointer-events-none custom-scrollbar overflow-y-auto"
+                                style="line-height: 28px; color: rgba(255,255,255,0.25);"></div>
+
+                            <!-- Input Layer -->
+                            <textarea id="code-input"
+                                class="absolute inset-0 w-full h-full bg-transparent text-transparent caret-white font-mono text-sm pt-6 px-6 border-none resize-none focus:ring-0 focus:outline-none custom-scrollbar overflow-y-auto z-0"
+                                style="line-height: 28px;" spellcheck="false" onscroll="app.syncScroll()"
+                                oninput="app.handleInput(event); app.updateEditor()"
+                                onkeydown="app.handleKeyDown(event)"></textarea>
+                        </div>
+
+                        <!-- Structure View Panel -->
+                        <div id="structure-panel"
+                            class="hidden w-64 border-l border-white/5 bg-brand-panel/20 overflow-y-auto custom-scrollbar z-20">
+                            <div class="p-4">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-xs font-bold text-brand-text uppercase tracking-wider">Structure
+                                    </h3>
+                                    <button onclick="app.toggleStructureView()"
+                                        class="text-brand-muted hover:text-white transition-colors">
+                                        <i class="fa-solid fa-times text-xs"></i>
+                                    </button>
+                                </div>
+                                <div id="structure-content" class="space-y-2 text-xs">
+                                    <p class="text-brand-muted text-center py-8">No structure to display</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Editor Footer Stats -->
+                    <div class="flex gap-4 mt-6">
+                        <div class="stat-card flex items-center gap-4 flex-1">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center text-brand-primary">
+                                <i class="fa-solid fa-code"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-brand-muted font-bold uppercase tracking-wider">File Size</p>
+                                <p class="text-sm font-bold" id="stat-editor-size">0 KB</p>
+                            </div>
+                        </div>
+                        <div class="stat-card flex items-center gap-4 flex-1">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                <i class="fa-solid fa-list-ol"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-brand-muted font-bold uppercase tracking-wider">Lines</p>
+                                <p class="text-sm font-bold" id="stat-editor-lines">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card flex items-center gap-4 flex-1">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-brand-muted">
+                                <i class="fa-solid fa-clock"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-brand-muted font-bold uppercase tracking-wider">Last Scan</p>
+                                <p class="text-sm font-bold">2h ago</p>
+                            </div>
+                        </div>
+                        <div class="stat-card flex items-center gap-4 flex-1">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+                                <i class="fa-solid fa-shield-virus"></i>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-brand-muted font-bold uppercase tracking-wider">Health Score
+                                </p>
+                                <p class="text-sm font-bold">Low</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="h-16 px-8 flex items-center justify-between border-t border-brand-border bg-brand-panel/30">
+                    <button onclick="app.fixCode()"
+                        class="bg-brand-primary hover:brightness-110 text-black border-0 px-6 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-wand-magic-sparkles text-black"></i> AI ANALYSIS
+                    </button>
+                    <div class="flex gap-8 text-[10px] font-bold text-brand-muted uppercase tracking-widest">
+                        <span>© 2024 CodescanPro AI. Precision static analysis IDE.</span>
+                        <div class="flex gap-4">
+                            <a href="#">Documentation</a>
+                            <a href="#">Keyboard Shortcuts</a>
+                            <a href="#">API Settings</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RESULTS TAB -->
+            <div id="tab-results"
+                class="hidden flex-col h-full w-full absolute inset-0 overflow-y-auto custom-scrollbar">
+                <header class="h-24 flex items-center justify-between px-10 shrink-0">
+                    <div>
+                        <p class="text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1">Projects >
+                            AuthenticationModule.py</p>
+                        <h2 class="text-3xl font-bold flex items-center gap-3">Security <span
+                                class="text-brand-primary">Analysis</span></h2>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="app.setTab('editor')"
+                            class="bg-white/5 hover:bg-white/10 text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border border-white/10 transition-all">
+                            <i class="fa-solid fa-chevron-left"></i> Back to Editor
+                        </button>
+                        <button
+                            class="bg-white/5 hover:bg-white/10 text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border border-white/10 transition-all">
+                            <i class="fa-solid fa-share-nodes"></i> Export
+                        </button>
+                        <button onclick="app.runCode()"
+                            class="bg-brand-primary text-black px-6 py-2 rounded-xl text-xs font-bold flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all">
+                            <i class="fa-solid fa-bolt"></i> RUN SCAN
+                        </button>
+                    </div>
+                </header>
+
+                <div class="px-10 py-6 grid grid-cols-3 gap-6 shrink-0">
+                    <div class="stat-card flex items-center gap-5">
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center text-brand-primary text-xl">
+                            <i class="fa-solid fa-gauge-high"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-brand-muted font-bold uppercase tracking-wider">Latency</p>
+                            <p class="text-xl font-bold"><span id="stat-latency">0</span><span
+                                    class="text-xs text-brand-muted ml-1">ms</span></p>
+                        </div>
+                    </div>
+                    <div class="stat-card flex items-center gap-5">
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 text-xl">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-brand-muted font-bold uppercase tracking-wider">Tokens</p>
+                            <p class="text-xl font-bold"><span id="stat-tokens">0</span></p>
+                        </div>
+                    </div>
+                    <div class="stat-card flex items-center gap-5">
+                        <div
+                            class="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-500 text-xl">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-brand-muted font-bold uppercase tracking-wider">Detected Issues
+                            </p>
+                            <p class="text-xl font-bold"><span id="stat-issues">0</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-10 pb-10 flex flex-col gap-6">
+                    <div class="glass-card border border-white/5 overflow-hidden">
+                        <div class="flex border-b border-white/5">
+                            <button id="btn-subtab-output" onclick="app.showResultSubTab('output')"
+                                class="px-8 py-4 text-xs font-bold text-brand-primary border-b-2 border-brand-primary uppercase tracking-widest">Output</button>
+                            <button id="btn-subtab-ai" onclick="app.showResultSubTab('ai')"
+                                class="px-8 py-4 text-xs font-bold text-brand-muted border-b-2 border-transparent hover:text-white transition-all uppercase tracking-widest">AI
+                                Analysis</button>
+                            <button id="btn-subtab-explanation" onclick="app.showResultSubTab('explanation')"
+                                class="px-8 py-4 text-xs font-bold text-brand-muted border-b-2 border-transparent hover:text-white transition-all uppercase tracking-widest">Explanation</button>
+                        </div>
+
+                        <div class="p-8">
+                            <div class="flex items-center justify-between mb-8">
+                                <div>
+                                    <h3 class="text-lg font-bold mb-1">Security Vulnerabilities</h3>
+                                    <p class="text-xs text-brand-muted">Heuristic engine and LLM results for your source
+                                        code.</p>
+                                </div>
+                                <div
+                                    class="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-full text-[10px] font-bold flex items-center gap-2 border border-emerald-500/20">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> ENGINE ONLINE
+                                </div>
+                            </div>
+
+                            <div id="ai-loading" class="hidden py-20 flex flex-col items-center justify-center gap-4">
+                                <div
+                                    class="w-12 h-12 border-4 border-brand-primary border-t-transparent rounded-full animate-spin">
+                                </div>
+                                <p class="text-xs font-bold text-brand-primary animate-pulse uppercase tracking-widest">
+                                    Analyzing codebase...</p>
+                            </div>
+
+                            <div id="ai-result" class="space-y-6">
+                                <!-- Results will be injected here -->
+                            </div>
+
+                            <div id="ai-explanation" class="hidden space-y-6">
+                                <!-- Explanation will be injected here -->
+                            </div>
+                        </div>
+
+                        <div id="console-output"
+                            class="hidden flex-grow p-10 font-mono text-xs text-brand-primary overflow-y-auto whitespace-pre-wrap bg-black/50">
+                            > Waiting for execution...
+                        </div>
+
+                        <div class="p-6 border-t border-white/5 bg-black/20 flex justify-end gap-3">
+                            <button
+                                class="px-6 py-2 text-xs font-bold text-brand-muted hover:text-white transition-colors">Discard
+                                All</button>
+                            <button onclick="app.applyFixedCode()"
+                                class="bg-white text-black px-6 py-2 rounded-xl text-xs font-bold hover:brightness-90 active:scale-95 transition-all">APPLY
+                                ALL SUGGESTIONS</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="glass-card border border-white/5 p-8">
+                            <h4 class="text-sm font-bold flex items-center gap-3 mb-6">
+                                <i class="fa-solid fa-terminal text-brand-primary"></i> Execution Log
+                            </h4>
+                            <div id="execution-log" class="space-y-3 font-mono text-[10px] text-brand-muted">
+                                <div class="flex gap-4"><span class="text-brand-primary">[READY]</span> Scanner idle...
+                                    waiting for input.</div>
+                            </div>
+                        </div>
+                        <div class="glass-card border border-white/5 p-8 flex flex-col">
+                            <h4 class="text-sm font-bold flex items-center gap-3 mb-6">
+                                <i class="fa-solid fa-brain text-emerald-400"></i> AI Reasoning
+                            </h4>
+                            <div id="ai-reasoning-content" class="space-y-4 flex-grow">
+                                <div class="flex gap-4">
+                                    <div
+                                        class="w-5 h-5 rounded bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-brand-primary">
+                                        1</div>
+                                    <p class="text-[11px] text-brand-muted">Scanner identified database insertion
+                                        patterns involving variable <span class="text-white">password</span> without
+                                        encryption wrappers.</p>
+                                </div>
+                                <div class="flex gap-4">
+                                    <div
+                                        class="w-5 h-5 rounded bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-brand-primary">
+                                        2</div>
+                                    <p class="text-[11px] text-brand-muted">Contextual analysis confirms this function
+                                        handles user onboarding, making the exposure <span
+                                            class="text-rose-500 font-bold">Critical</span>.</p>
+                                </div>
+                                <div class="flex gap-4">
+                                    <div
+                                        class="w-5 h-5 rounded bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-brand-primary">
+                                        3</div>
+                                    <p class="text-[11px] text-brand-muted">Automated patch generated using standard
+                                        <span class="text-brand-primary">bcrypt</span> implementation (64-bit salt).
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] text-brand-muted font-bold uppercase tracking-widest mb-1">
+                                        Complexity Index</p>
+                                    <p class="text-2xl font-bold font-mono text-emerald-400">O(log n)</p>
+                                </div>
+                                <div class="text-right">
+                                    <span
+                                        class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded">Optimized</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div id="tab-settings"
+                class="hidden flex-col h-full w-full absolute inset-0 overflow-y-auto custom-scrollbar">
+                <header class="h-24 flex items-center justify-between px-10 shrink-0 border-b border-brand-border">
+                    <div>
+                        <p class="text-[10px] font-bold text-brand-muted uppercase tracking-widest mb-1">Preferences</p>
+                        <h2 class="text-3xl font-bold flex items-center gap-3">Settings <span
+                                class="text-brand-primary">& Configuration</span></h2>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="app.setTab('editor')"
+                            class="bg-white/5 hover:bg-white/10 text-white px-5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border border-white/10 transition-all">
+                            <i class="fa-solid fa-chevron-left"></i> Back to Editor
+                        </button>
+                    </div>
+                </header>
+
+                <div class="px-10 py-8 space-y-6">
+                    <!-- Appearance Settings -->
+                    <div class="glass-card border border-white/5 p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-brand-primary/10 flex items-center justify-center">
+                                <i class="fa-solid fa-palette text-brand-primary"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">Appearance</h3>
+                                <p class="text-xs text-brand-muted">Customize the look and feel of your workspace</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div>
+                                    <p class="text-sm font-bold">Theme</p>
+                                    <p class="text-xs text-brand-muted">Currently using Dark Mode</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button onclick="app.setTheme('dark')"
+                                        class="px-4 py-2 rounded-lg bg-brand-primary text-black text-xs font-bold">
+                                        <i class="fa-solid fa-moon mr-1"></i> Dark
+                                    </button>
+                                    <button onclick="app.setTheme('light')"
+                                        class="px-4 py-2 rounded-lg bg-white/5 text-brand-muted text-xs font-bold hover:bg-white/10 transition-all">
+                                        <i class="fa-solid fa-sun mr-1"></i> Light
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div>
+                                    <p class="text-sm font-bold">Font Size</p>
+                                    <p class="text-xs text-brand-muted">Adjust editor font size</p>
+                                </div>
+                                <select onchange="app.setFontSize(this.value)"
+                                    class="bg-brand-panel border border-white/10 rounded-lg px-4 py-2 text-xs font-bold text-brand-text focus:ring-2 focus:ring-brand-primary">
+                                    <option value="12px">12px</option>
+                                    <option value="14px" selected>14px</option>
+                                    <option value="16px">16px</option>
+                                    <option value="18px">18px</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Editor Settings -->
+                    <div class="glass-card border border-white/5 p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                                <i class="fa-solid fa-code text-emerald-500"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">Editor Preferences</h3>
+                                <p class="text-xs text-brand-muted">Configure your coding environment</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div>
+                                    <p class="text-sm font-bold">Auto-save</p>
+                                    <p class="text-xs text-brand-muted">Automatically save your work</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" onchange="app.toggleAutoSave(this.checked)"
+                                        class="sr-only peer" checked>
+                                    <div
+                                        class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary">
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div>
+                                    <p class="text-sm font-bold">Line Numbers</p>
+                                    <p class="text-xs text-brand-muted">Show line numbers in editor</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" onchange="app.toggleLineNumbers(this.checked)"
+                                        class="sr-only peer" checked>
+                                    <div
+                                        class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary">
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div>
+                                    <p class="text-sm font-bold">Tab Size</p>
+                                    <p class="text-xs text-brand-muted">Number of spaces per tab</p>
+                                </div>
+                                <select onchange="app.setTabSize(this.value)"
+                                    class="bg-brand-panel border border-white/10 rounded-lg px-4 py-2 text-xs font-bold text-brand-text focus:ring-2 focus:ring-brand-primary">
+                                    <option value="2">2 spaces</option>
+                                    <option value="4" selected>4 spaces</option>
+                                    <option value="8">8 spaces</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI & Analysis Settings -->
+                    <div class="glass-card border border-white/5 p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                                <i class="fa-solid fa-brain text-purple-500"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">AI Configuration</h3>
+                                <p class="text-xs text-brand-muted">Configure AI analysis settings</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div>
+                                    <p class="text-sm font-bold">AI Model</p>
+                                    <p class="text-xs text-brand-muted">Select preferred AI model</p>
+                                </div>
+                                <select onchange="app.setAIModel(this.value)"
+                                    class="bg-brand-panel border border-white/10 rounded-lg px-4 py-2 text-xs font-bold text-brand-text focus:ring-2 focus:ring-brand-primary">
+                                    <option value="Gemini Pro" selected>Gemini Pro</option>
+                                    <option value="GPT-4">GPT-4</option>
+                                    <option value="Claude 3">Claude 3</option>
+                                </select>
+                            </div>
+
+                            <div
+                                class="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div>
+                                    <p class="text-sm font-bold">Auto-fix Suggestions</p>
+                                    <p class="text-xs text-brand-muted">Automatically apply AI suggestions</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" onchange="app.toggleAutoFix(this.checked)"
+                                        class="sr-only peer">
+                                    <div
+                                        class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary">
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                                <p class="text-sm font-bold mb-2">API Key</p>
+                                <p class="text-xs text-brand-muted mb-3">Configure your Gemini API key</p>
+                                <div class="flex gap-2">
+                                    <input type="password" placeholder="Enter your API key"
+                                        class="flex-1 bg-brand-panel border border-white/10 rounded-lg px-4 py-2 text-xs text-brand-text focus:ring-2 focus:ring-brand-primary">
+                                    <button onclick="app.saveAPIKey()"
+                                        class="px-4 py-2 rounded-lg bg-brand-primary text-black text-xs font-bold hover:brightness-110 transition-all">
+                                        Save
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Settings -->
+                    <div class="glass-card border border-white/5 p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center">
+                                <i class="fa-solid fa-user text-rose-500"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">Account</h3>
+                                <p class="text-xs text-brand-muted">Manage your account settings</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="p-4 rounded-xl bg-white/5 border border-white/5">
+                                <div class="flex items-center gap-4 mb-4">
+                                    <div id="settings-user-avatar"
+                                        class="w-16 h-16 rounded-full bg-gradient-to-br from-brand-primary/20 to-brand-secondary/20 flex items-center justify-center text-lg font-bold ring-2 ring-brand-primary/30">
+                                        <i class="fa-solid fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <p id="settings-user-name" class="text-sm font-bold">Alex Rivera</p>
+                                        <p id="settings-user-email" class="text-xs text-brand-muted">
+                                            alex.dev@codescanpro.ai</p>
+                                        <span
+                                            class="inline-block mt-1 px-2 py-1 bg-brand-primary/10 text-brand-primary text-[10px] font-bold rounded uppercase tracking-widest border border-brand-primary/20">
+                                            Pro Plan
+                                        </span>
+                                    </div>
+                                </div>
+                                <button onclick="app.editProfile()"
+                                    class="w-full px-4 py-2 rounded-lg bg-white/5 text-brand-muted text-xs font-bold hover:bg-white/10 hover:text-white transition-all border border-white/10">
+                                    <i class="fa-solid fa-pen-to-square mr-2"></i> Edit Profile
+                                </button>
+                            </div>
+
+                            <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                                <p class="text-sm font-bold text-rose-500 mb-2">Danger Zone</p>
+                                <p class="text-xs text-brand-muted mb-3">Irreversible actions</p>
+                                <button onclick="app.logout()"
+                                    class="w-full px-4 py-2 rounded-lg bg-rose-500/20 text-rose-500 text-xs font-bold hover:bg-rose-500/30 transition-all border border-rose-500/30">
+                                    <i class="fa-solid fa-right-from-bracket mr-2"></i> Sign Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- About Section -->
+                    <div class="glass-card border border-white/5 p-8">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                                <i class="fa-solid fa-info-circle text-brand-muted"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">About CodescanPro</h3>
+                                <p class="text-xs text-brand-muted">Version 2.0.1</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-xs text-brand-muted">
+                            <p>© 2024 CodescanPro AI. All rights reserved.</p>
+                            <div class="flex gap-4">
+                                <a href="#" class="hover:text-brand-primary transition-colors">Documentation</a>
+                                <a href="#" class="hover:text-brand-primary transition-colors">Privacy Policy</a>
+                                <a href="#" class="hover:text-brand-primary transition-colors">Terms of Service</a>
+                                <a href="#" class="hover:text-brand-primary transition-colors">Support</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Custom New Tab Modal -->
+    <div id="new-tab-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="app.closeNewTabModal()">
+        </div>
+
+        <!-- Modal Content -->
+        <div
+            class="relative w-96 bg-brand-panel border border-white/10 rounded-2xl shadow-2xl p-6 transform transition-all scale-100 opacity-100 animate-in fade-in zoom-in duration-200">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-bold text-brand-text flex items-center gap-2">
+                    <i class="fa-solid fa-file-circle-plus text-brand-primary"></i>
+                    New File
+                </h3>
+                <button onclick="app.closeNewTabModal()"
+                    class="text-brand-muted hover:text-brand-text transition-colors">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-brand-muted uppercase tracking-wider mb-2">Language or
+                        Filename</label>
+                    <input type="text" id="new-tab-input" placeholder="e.g. python, main.js, go"
+                        class="w-full bg-brand-bg border border-white/10 rounded-xl px-4 py-3 text-sm text-brand-text focus:outline-none focus:border-brand-primary/50 focus:ring-1 focus:ring-brand-primary/50 transition-all font-mono"
+                        onkeyup="if(event.key === 'Enter') app.confirmNewTab()">
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button onclick="app.closeNewTabModal()"
+                        class="flex-1 px-4 py-2 rounded-xl border border-white/10 text-brand-muted hover:text-brand-text hover:bg-white/5 transition-all text-xs font-bold">
+                        Cancel
+                    </button>
+                    <button onclick="app.confirmNewTab()"
+                        class="flex-1 px-4 py-2 rounded-xl bg-brand-primary text-black hover:brightness-110 transition-all text-xs font-bold shadow-[0_0_15px_rgba(0,212,255,0.3)]">
+                        Create File
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // GLOBALS
+        const app = {
+            // ... (rest of the app object)
+
+            state: {
+                loggedIn: false,
+                currentTab: 'editor',
+                user: null,
+                fixedCode: null,
+                currentLanguage: 'python',
+                activeFile: 'auth',
+                files: {
+                    'auth': {
+                        name: 'AuthenticationModule.py',
+                        content: 'import hashlib\nimport os\n\ndef hash_password(password):\n    salt = os.urandom(32)\n    # Vulnerability: Weak hashing algorithm used\n    key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)\n    return key',
+                        language: 'python'
+                    },
+                    'storage': {
+                        name: 'StorageHandler.js',
+                        content: 'import { S3Client } from "@aws-sdk/client-s3";\n\nconst client = new S3Client({ region: "us-east-1" });\n\nexport async function uploadFile(bucket, key, body) {\n    // Upload logic here\n}',
+                        language: 'javascript'
+                    },
+                    'dbutils': {
+                        name: 'DatabaseUtils.go',
+                        content: 'package main\n\nimport "database/sql"\n\nfunc ConnectDB() *sql.DB {\n    // Connection logic\n    return nil\n}',
+                        language: 'go'
+                    }
+                },
+                settings: {
+                    theme: 'dark',
+                    fontSize: '14px',
+                    autoSave: true,
+                    lineNumbers: true,
+                    tabSize: '4',
+                    aiModel: 'Gemini Pro',
+                    autoFix: false,
+                    apiKey: ''
+                }
+            },
+
+            // DYNAMIC TAB SYSTEM
+            renderTabs() {
+                const tabContainer = document.querySelector('.overflow-x-auto');
+                if (!tabContainer) return;
+
+                const activeId = this.state.activeFile;
+                let html = '';
+
+                // Render File Tabs
+                Object.keys(this.state.files).forEach(fileId => {
+                    const file = this.state.files[fileId];
+                    const isActive = fileId === activeId;
+
+                    // Determine Icon and Color
+                    let iconClass = 'fa-file-code';
+                    let iconColor = 'text-brand-primary';
+
+                    if (file.language === 'javascript') { iconClass = 'fa-brands fa-js'; iconColor = 'text-yellow-500'; }
+                    else if (file.language === 'python') { iconClass = 'fa-brands fa-python'; iconColor = 'text-blue-400'; } // Requires FontAwesome brands
+                    else if (file.language === 'go') { iconClass = 'fa-brands fa-golang'; iconColor = 'text-cyan-500'; }
+                    else if (file.language === 'html') { iconClass = 'fa-brands fa-html5'; iconColor = 'text-orange-500'; }
+                    else if (file.language === 'java') { iconClass = 'fa-brands fa-java'; iconColor = 'text-red-500'; }
+                    else if (file.language === 'c') { iconClass = 'fa-solid fa-c'; iconColor = 'text-blue-600'; }
+
+                    if (isActive) {
+                        html += `
+                        <div onclick="app.switchTab('${fileId}')" class="group relative px-4 py-2 bg-brand-bg rounded-t-lg border-t border-x border-brand-border text-xs font-bold flex items-center gap-3 cursor-pointer select-none min-w-[160px] max-w-[200px] text-brand-text shadow-sm translate-y-[1px] z-10">
+                            <i class="${iconClass} ${iconColor} text-[10px]"></i>
+                            <span class="truncate active-tab-text">${file.name}</span>
+                            <i onclick="event.stopPropagation(); app.closeTab('${fileId}')" class="fa-solid fa-xmark ml-auto opacity-50 hover:opacity-100 p-1 rounded-md hover:bg-brand-primary/10 transition-all"></i>
+                        </div>`;
+                    } else {
+                        html += `
+                        <div onclick="app.switchTab('${fileId}')" class="group relative px-4 py-2 text-brand-muted hover:text-brand-text hover:bg-white/5 rounded-t-lg border-t border-x border-transparent hover:border-white/5 text-xs font-medium flex items-center gap-3 cursor-pointer select-none min-w-[160px] max-w-[200px] transition-all">
+                            <i class="${iconClass} ${iconColor} opacity-70"></i>
+                            <span class="truncate">${file.name}</span>
+                            <i onclick="event.stopPropagation(); app.closeTab('${fileId}')" class="fa-solid fa-xmark ml-auto opacity-0 group-hover:opacity-50 hover:!opacity-100 text-[10px] p-1"></i>
+                        </div>`;
+                    }
+                });
+
+                // Add New Tab Button
+                html += `
+                <div onclick="app.addNewTab()" class="w-8 h-8 mb-1 flex items-center justify-center rounded-lg text-brand-muted hover:text-brand-text hover:bg-white/5 cursor-pointer transition-all ml-1 shrink-0">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                </div>`;
+
+                tabContainer.innerHTML = html;
+            },
+
+            // EDITOR CORE
+            switchTab(tabId) {
+                // 1. Save current content
+                const currentTab = this.state.activeFile;
+                const editor = document.getElementById('code-input');
+                if (this.state.files[currentTab] && editor) {
+                    this.state.files[currentTab].content = editor.value;
+                }
+
+                // 2. Set new active tab
+                if (this.state.files[tabId]) {
+                    this.state.activeFile = tabId;
+                } else {
+                    // Fallback if tab doesn't exist
+                    const keys = Object.keys(this.state.files);
+                    if (keys.length > 0) this.state.activeFile = keys[0];
+                }
+
+                // 3. Render Tabs
+                this.renderTabs();
+
+                // 4. Load new content
+                const file = this.state.files[this.state.activeFile];
+                if (file) {
+                    editor.value = file.content;
+
+                    // Update Language Display
+                    const langMap = { 'python': 'Python', 'javascript': 'JavaScript', 'go': 'Go', 'json': 'JSON', 'html': 'HTML', 'java': 'Java', 'c': 'C / C++' };
+                    const display = document.getElementById('lang-select-display');
+                    if (display) display.innerText = langMap[file.language] || 'Plain Text';
+
+                    this.state.currentLanguage = file.language;
+                }
+
+                this.updateEditor();
+                this.updateStructureView();
+            },
+
+            addNewTab() {
+                this.openNewTabModal();
+            },
+
+            openNewTabModal() {
+                const modal = document.getElementById('new-tab-modal');
+                const input = document.getElementById('new-tab-input');
+                modal.classList.remove('hidden');
+                input.value = '';
+                setTimeout(() => input.focus(), 50);
+            },
+
+            closeNewTabModal() {
+                const modal = document.getElementById('new-tab-modal');
+                modal.classList.add('hidden');
+            },
+
+            confirmNewTab() {
+                const input = document.getElementById('new-tab-input');
+                const val = input.value.trim();
+
+                if (!val) {
+                    this.closeNewTabModal();
+                    return;
+                }
+
+                // Parse Input (Language or Filename)
+                const langMap = {
+                    'python': 'py', 'py': 'py',
+                    'javascript': 'js', 'js': 'js',
+                    'go': 'go', 'golang': 'go',
+                    'java': 'java',
+                    'html': 'html',
+                    'c': 'c', 'cpp': 'c',
+                    'css': 'css', 'json': 'json'
+                };
+
+                const supportedLangs = {
+                    'py': 'python', 'python': 'python',
+                    'js': 'javascript', 'javascript': 'javascript',
+                    'go': 'go', 'golang': 'go',
+                    'java': 'java',
+                    'html': 'html',
+                    'c': 'c', 'cpp': 'c',
+                    'css': 'css', 'json': 'json'
+                };
+
+                let name = '';
+                let ext = '';
+                let lang = 'python'; // Default
+
+                if (val.includes('.')) {
+                    // Filename provided (e.g., "script.py")
+                    name = val;
+                    const parts = val.split('.');
+                    ext = parts[parts.length - 1].toLowerCase();
+                    lang = supportedLangs[ext] || 'python';
+                } else {
+                    // Language provided (e.g., "python")
+                    const standardized = val.toLowerCase();
+                    ext = langMap[standardized] || 'txt';
+                    lang = supportedLangs[standardized] || 'python';
+                    name = `untitled.${ext}`;
+                }
+
+                const id = 'new_' + Date.now();
+                this.state.files[id] = {
+                    name: name,
+                    content: '',
+                    language: lang
+                };
+
+                this.switchTab(id);
+                this.closeNewTabModal();
+            },
+
+            exportFile() {
+                const activeFileId = this.state.activeFile;
+                const file = this.state.files[activeFileId];
+
+                // Sync current editor content first
+                const editor = document.getElementById('code-input');
+                if (editor) {
+                    file.content = editor.value;
+                }
+
+                if (!file) {
+                    this.showNotification('No file to export', 'error');
+                    return;
+                }
+
+                const blob = new Blob([file.content], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                this.showNotification(`Exported ${file.name}`, 'success');
+            },
+
+            // ZEN & GHOST AI
+            toggleZenMode() {
+                const isZen = document.body.classList.toggle('zen-mode');
+                if (isZen) {
+                    this.showNotification('Zen Mode Enabled (ESC to exit)', 'success');
+                    if (!this._zenEscHandler) {
+                        this._zenEscHandler = (e) => {
+                            if (e.key === 'Escape') this.toggleZenMode();
+                        };
+                    }
+                    document.addEventListener('keydown', this._zenEscHandler);
+                } else {
+                    if (this._zenEscHandler) {
+                        document.removeEventListener('keydown', this._zenEscHandler);
+                    }
+                }
+            },
+
+            handleInput(e) {
+                const textarea = e.target;
+                const val = textarea.value;
+                const cursorPos = textarea.selectionEnd;
+                const ghostLayer = document.getElementById('ghost-text');
+
+                if (!ghostLayer) return;
+
+                // Basic AI Simulation
+                const textBeforeCursor = val.substring(0, cursorPos);
+                const lines = textBeforeCursor.split('\n');
+                const currentLine = lines[lines.length - 1];
+
+                let suggestion = '';
+
+                // Simple Trigger Patterns
+                const triggers = {
+                    'def': ' function_name():',
+                    'class': ' NewClass:',
+                    'import': ' os',
+                    'print': '("Hello World")',
+                    'if': ' __name__ == "__main__":',
+                    'for': ' i in range(10):',
+                    'while': ' True:',
+                    'try': ':',
+                    'return': ' True'
+                };
+
+                const words = currentLine.trim().split(/\s+/);
+                const lastWord = words[words.length - 1];
+
+                if (triggers[lastWord] && currentLine.trim().endsWith(lastWord)) {
+                    suggestion = triggers[lastWord];
+                }
+
+                if (suggestion) {
+                    const escape = (str) => str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    ghostLayer.innerHTML = `<span style="opacity:0">${escape(textBeforeCursor)}</span><span style="color: rgba(255,255,255,0.4); font-style: italic;">${escape(suggestion)}</span>`;
+                    this.state.ghostSuggestion = suggestion;
+                } else {
+                    ghostLayer.innerHTML = '';
+                    this.state.ghostSuggestion = null;
+                }
+            },
+
+            handleKeyDown(e) {
+                if (e.key === 'Tab' && this.state.ghostSuggestion) {
+                    e.preventDefault();
+                    const textarea = e.target;
+                    const cursorPos = textarea.selectionEnd;
+                    const val = textarea.value;
+                    const suggestion = this.state.ghostSuggestion;
+
+                    const newVal = val.substring(0, cursorPos) + suggestion + val.substring(cursorPos);
+
+                    textarea.value = newVal;
+                    textarea.selectionStart = textarea.selectionEnd = cursorPos + suggestion.length;
+
+                    this.state.ghostSuggestion = null;
+                    document.getElementById('ghost-text').innerHTML = '';
+
+                    this.updateEditor();
+                    this.handleInput({ target: textarea });
+                }
+            },
+
+            closeTab(tabId) {
+                delete this.state.files[tabId];
+
+                // If closing active tab, switch to another
+                if (this.state.activeFile === tabId) {
+                    const keys = Object.keys(this.state.files);
+                    if (keys.length > 0) {
+                        this.switchTab(keys[keys.length - 1]);
+                    } else {
+                        // Ensure at least one tab
+                        this.addNewTab();
+                    }
+                } else {
+                    this.renderTabs(); // Just re-render
+                }
+            },
+
+            selectLanguage(lang, displayName) {
+                const file = this.state.files[this.state.activeFile];
+                if (!file) return;
+
+                file.language = lang;
+                this.state.currentLanguage = lang;
+
+                // Update Display Name
+                document.getElementById('lang-select-display').innerText = displayName;
+                this.toggleLanguageDropdown(); // Close dropdown
+
+                // Update Filename Extension
+                const extMap = {
+                    'python': 'py', 'javascript': 'js', 'go': 'go',
+                    'java': 'java', 'c': 'c', 'html': 'html', 'json': 'json'
+                };
+
+                const parts = file.name.split('.');
+                if (parts.length > 1) {
+                    parts.pop(); // Remove old extension
+                }
+                file.name = parts.join('.') + '.' + (extMap[lang] || 'txt');
+
+                this.renderTabs(); // Re-render to show new icon and name
+                this.updateStructureView(); // Re-parse structure
+            },
+
+            toggleLanguageDropdown() {
+                const dropdown = document.getElementById('lang-dropdown');
+                dropdown.classList.toggle('hidden');
+            },
+
+            syncScroll() {
+                const editor = document.getElementById('code-input');
+                const lineNums = document.getElementById('line-numbers-container');
+                const highlight = document.getElementById('highlight-layer');
+                if (lineNums) lineNums.scrollTop = editor.scrollTop;
+                if (highlight) {
+                    highlight.scrollTop = editor.scrollTop;
+                    highlight.scrollLeft = editor.scrollLeft;
+                }
+            },
+
+            escapeHtml(text) {
+                return text
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            },
+
+            highlightCode(code) {
+                // Simple Regex-based Highlighting
+                let html = this.escapeHtml(code);
+
+                // Comments
+                html = html.replace(/(#.*|\/\/.*)/g, '<span class="token comment">$1</span>');
+
+                // Keys/Keywords
+                html = html.replace(/\b(def|class|import|from|return|if|else|elif|try|except|while|for|in|as|with|pass|break|continue|async|await|const|var|let|function|export|package|func)\b/g, '<span class="token keyword">$1</span>');
+
+                // Functions
+                html = html.replace(/\b([a-zA-Z_]\w*)(?=\()/g, '<span class="token function">$1</span>');
+
+                // Strings
+                html = html.replace(/('.*?'|".*?")/g, '<span class="token string">$1</span>');
+
+                // Numbers
+                html = html.replace(/\b(\d+)\b/g, '<span class="token number">$1</span>');
+
+                // Class Names
+                html = html.replace(/\b([A-Z][a-zA-Z0-9_]*)\b/g, '<span class="token class-name">$1</span>');
+
+                return html;
+            },
+
+            updateEditor() {
+                const editor = document.getElementById('code-input');
+                const lineNumbers = document.getElementById('line-numbers');
+                const highlightCode = document.getElementById('highlight-code');
+
+                const code = editor.value;
+                const lines = code.split('\n');
+                const lineCount = lines.length;
+
+                // Update Line Numbers
+                let linesArr = [];
+                for (let i = 1; i <= lineCount; i++) {
+                    linesArr.push(i);
+                }
+                lineNumbers.innerHTML = linesArr.join('<br>');
+
+                // Update Syntax Highlighting
+                // Ensure text ends with new line if textarea does to match height
+                let finalCode = code;
+                if (code[code.length - 1] === "\n") {
+                    finalCode += " "; // Placeholder to show new line
+                }
+                highlightCode.innerHTML = this.highlightCode(finalCode);
+
+                // Update Stats
+                const linesStat = document.getElementById('stat-editor-lines');
+                if (linesStat) linesStat.innerText = lineCount;
+
+                const sizeStat = document.getElementById('stat-editor-size');
+                if (sizeStat) {
+                    const size = (new Blob([code]).size / 1024).toFixed(1);
+                    sizeStat.innerText = `${size} KB`;
+                }
+
+                // Live Structure Update
+                if (!document.getElementById('structure-panel').classList.contains('hidden')) {
+                    this.updateStructureView();
+                }
+            },
+
+            setTab(tabName) {
+                this.state.currentTab = tabName;
+                const navEditor = document.getElementById('nav-editor');
+                const navResults = document.getElementById('nav-results');
+                const navSettings = document.getElementById('nav-settings');
+                const tabEditor = document.getElementById('tab-editor');
+                const tabResults = document.getElementById('tab-results');
+                const tabSettings = document.getElementById('tab-settings');
+
+                // Reset all nav items
+                [navEditor, navResults, navSettings].forEach(nav => {
+                    if (nav) {
+                        nav.classList.remove('nav-item-active');
+                        nav.classList.add('text-brand-muted', 'hover:bg-white/5', 'hover:text-white');
+                    }
+                });
+
+                // Hide all tabs
+                [tabEditor, tabResults, tabSettings].forEach(tab => {
+                    if (tab) tab.classList.add('hidden');
+                });
+
+                // Show selected tab and highlight nav
+                if (tabName === 'editor') {
+                    navEditor.classList.add('nav-item-active');
+                    navEditor.classList.remove('text-brand-muted', 'hover:bg-white/5', 'hover:text-white');
+                    tabEditor.classList.remove('hidden');
+                } else if (tabName === 'results') {
+                    navResults.classList.add('nav-item-active');
+                    navResults.classList.remove('text-brand-muted', 'hover:bg-white/5', 'hover:text-white');
+                    tabResults.classList.remove('hidden');
+                } else if (tabName === 'settings') {
+                    navSettings.classList.add('nav-item-active');
+                    navSettings.classList.remove('text-brand-muted', 'hover:bg-white/5', 'hover:text-white');
+                    tabSettings.classList.remove('hidden');
+                }
+            },
+            showResultSubTab(subTab) {
+                const outContainer = document.getElementById('console-output');
+                const aiResContainer = document.getElementById('ai-result');
+                const aiExpContainer = document.getElementById('ai-explanation');
+                const aiLoading = document.getElementById('ai-loading');
+                const btnOut = document.getElementById('btn-subtab-output');
+                const btnAi = document.getElementById('btn-subtab-ai');
+                const btnExp = document.getElementById('btn-subtab-explanation');
+
+                // Reset all
+                outContainer.classList.add('hidden');
+                aiResContainer.classList.add('hidden');
+                aiExpContainer.classList.add('hidden');
+                aiLoading.classList.add('hidden');
+                btnOut.classList.remove('text-brand-primary', 'border-brand-primary');
+                btnOut.classList.add('text-brand-muted', 'border-transparent');
+                btnAi.classList.remove('text-brand-primary', 'border-brand-primary');
+                btnAi.classList.add('text-brand-muted', 'border-transparent');
+                btnExp.classList.remove('text-brand-primary', 'border-brand-primary');
+                btnExp.classList.add('text-brand-muted', 'border-transparent');
+
+                if (subTab === 'output') {
+                    outContainer.classList.remove('hidden');
+                    btnOut.classList.add('text-brand-primary', 'border-brand-primary');
+                    btnOut.classList.remove('text-brand-muted', 'border-transparent');
+                } else if (subTab === 'ai') {
+                    aiResContainer.classList.remove('hidden');
+                    btnAi.classList.add('text-brand-primary', 'border-brand-primary');
+                    btnAi.classList.remove('text-brand-muted', 'border-transparent');
+                } else if (subTab === 'explanation') {
+                    aiExpContainer.classList.remove('hidden');
+                    btnExp.classList.add('text-brand-primary', 'border-brand-primary');
+                    btnExp.classList.remove('text-brand-muted', 'border-transparent');
+                }
+            },
+
+            // AUTHENTICATION
+            loginSuccess(payload) {
+                this.state.loggedIn = true;
+                this.state.user = payload;
+
+                // Update Sidebar
+                const name = payload.name || "User";
+                const email = payload.email || "";
+                const pic = payload.picture;
+
+                document.getElementById('user-name').innerText = name;
+                if (pic) {
+                    document.getElementById('user-avatar').innerHTML = `<img src="${pic}" class="w-full h-full rounded-full object-cover">`;
+                }
+
+                // Update Settings Page Account Section
+                const settingsName = document.getElementById('settings-user-name');
+                const settingsEmail = document.getElementById('settings-user-email');
+                const settingsAvatar = document.getElementById('settings-user-avatar');
+
+                if (settingsName) settingsName.innerText = name;
+                if (settingsEmail) settingsEmail.innerText = email;
+                if (settingsAvatar && pic) {
+                    settingsAvatar.innerHTML = `<img src="${pic}" class="w-full h-full rounded-full object-cover">`;
+                }
+
+                // REVEAL APP
+                const overlay = document.getElementById('login-overlay');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 700);
+            },
+
+            // LOGOUT
+            logout() {
+                if (!this.state.loggedIn) return;
+
+                // Close menu first
+                this.toggleProfileMenu();
+
+                this.state.loggedIn = false;
+                this.state.user = null;
+
+                // Reset Sidebar
+                document.getElementById('user-name').innerText = "Not Logged In";
+                document.getElementById('user-avatar').innerHTML = '<i class="fa-solid fa-user"></i>';
+
+                // Reset Settings Page Account Section
+                const settingsName = document.getElementById('settings-user-name');
+                const settingsEmail = document.getElementById('settings-user-email');
+                const settingsAvatar = document.getElementById('settings-user-avatar');
+
+                if (settingsName) settingsName.innerText = "Not Logged In";
+                if (settingsEmail) settingsEmail.innerText = "Please sign in";
+                if (settingsAvatar) {
+                    settingsAvatar.innerHTML = '<i class="fa-solid fa-user"></i>';
+                }
+
+                // BRING BACK OVERLAY
+                const overlay = document.getElementById('login-overlay');
+                overlay.style.display = 'flex';
+                void overlay.offsetWidth;
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+            },
+
+            // PROFILE MENU TOGGLE
+            toggleProfileMenu() {
+                const menu = document.getElementById('profile-menu');
+                menu.classList.toggle('hidden');
+            },
+
+            // UTILITY FUNCTIONS
+            toggleStructureView() {
+                const panel = document.getElementById('structure-panel');
+                const isHidden = panel.classList.contains('hidden');
+
+                if (isHidden) {
+                    panel.classList.remove('hidden');
+                    this.updateStructureView();
+                } else {
+                    panel.classList.add('hidden');
+                }
+            },
+
+            updateStructureView() {
+                const code = document.getElementById('code-input').value;
+                const lang = this.getCurrentLanguage();
+                const content = document.getElementById('structure-content');
+
+                if (!code.trim()) {
+                    content.innerHTML = '<p class="text-brand-muted text-center py-8">No code to analyze</p>';
+                    return;
+                }
+
+                let structure = this.parseCodeStructure(code, lang);
+
+                if (structure.length === 0) {
+                    content.innerHTML = '<p class="text-brand-muted text-center py-8">No structure found</p>';
+                    return;
+                }
+
+                let html = '';
+                structure.forEach(item => {
+                    const icon = item.type === 'function' ? 'fa-function' :
+                        item.type === 'class' ? 'fa-cube' :
+                            item.type === 'import' ? 'fa-download' : 'fa-code';
+                    const color = item.type === 'function' ? 'text-brand-primary' :
+                        item.type === 'class' ? 'text-emerald-500' :
+                            item.type === 'import' ? 'text-yellow-500' : 'text-brand-muted';
+
+                    html += `
+                        <div class="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-all">
+                            <i class="fa-solid ${icon} ${color} text-[10px]"></i>
+                            <span class="text-brand-text font-mono">${item.name}</span>
+                        </div>
+                    `;
+                });
+
+                content.innerHTML = html;
+            },
+
+            parseCodeStructure(code, lang) {
+                const structure = [];
+                const lines = code.split('\n');
+
+                if (lang === 'python') {
+                    // Parse Python code
+                    lines.forEach((line, index) => {
+                        const trimmed = line.trim();
+
+                        // Imports
+                        if (trimmed.startsWith('import ') || trimmed.startsWith('from ')) {
+                            const match = trimmed.match(/(?:import|from)\s+(\S+)/);
+                            if (match) {
+                                structure.push({ type: 'import', name: match[1], line: index + 1 });
+                            }
+                        }
+
+                        // Classes
+                        const classMatch = trimmed.match(/^class\s+(\w+)/);
+                        if (classMatch) {
+                            structure.push({ type: 'class', name: classMatch[1], line: index + 1 });
+                        }
+
+                        // Functions
+                        const funcMatch = trimmed.match(/^def\s+(\w+)/);
+                        if (funcMatch) {
+                            structure.push({ type: 'function', name: funcMatch[1] + '()', line: index + 1 });
+                        }
+                    });
+                } else if (lang === 'javascript') {
+                    // Parse JavaScript code
+                    lines.forEach((line, index) => {
+                        const trimmed = line.trim();
+
+                        // Imports
+                        if (trimmed.startsWith('import ') || trimmed.startsWith('require(')) {
+                            const match = trimmed.match(/(?:import|require\()\s*['"]?(\S+)/);
+                            if (match) {
+                                structure.push({ type: 'import', name: match[1].replace(/['"]/g, ''), line: index + 1 });
+                            }
+                        }
+
+                        // Classes
+                        const classMatch = trimmed.match(/^class\s+(\w+)/);
+                        if (classMatch) {
+                            structure.push({ type: 'class', name: classMatch[1], line: index + 1 });
+                        }
+
+                        // Functions
+                        const funcMatch = trimmed.match(/^(?:function\s+(\w+)|const\s+(\w+)\s*=\s*(?:async\s*)?\(|(\w+)\s*:\s*(?:async\s*)?function)/);
+                        if (funcMatch) {
+                            const name = funcMatch[1] || funcMatch[2] || funcMatch[3];
+                            structure.push({ type: 'function', name: name + '()', line: index + 1 });
+                        }
+                    });
+                } else if (lang === 'java' || lang === 'c') {
+                    // Parse Java/C/C++ code
+                    lines.forEach((line, index) => {
+                        const trimmed = line.trim();
+
+                        // Imports (Java)
+                        if (trimmed.startsWith('import ') || trimmed.startsWith('#include')) {
+                            const match = trimmed.match(/(?:import|#include)\s+[<"]?(\S+)/);
+                            if (match) {
+                                structure.push({ type: 'import', name: match[1].replace(/[<">]/g, ''), line: index + 1 });
+                            }
+                        }
+
+                        // Classes
+                        const classMatch = trimmed.match(/^(?:public\s+)?class\s+(\w+)/);
+                        if (classMatch) {
+                            structure.push({ type: 'class', name: classMatch[1], line: index + 1 });
+                        }
+
+                        // Functions/Methods
+                        const funcMatch = trimmed.match(/^(?:public|private|protected|static|\w+)\s+\w+\s+(\w+)\s*\(/);
+                        if (funcMatch && !trimmed.includes('class ')) {
+                            structure.push({ type: 'function', name: funcMatch[1] + '()', line: index + 1 });
+                        }
+                    });
+                }
+
+                return structure;
+            },
+
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        this.showNotification(`Error enabling fullscreen: ${err.message}`, 'error');
+                    });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            },
+
+            // THEME (Fixed to Dark for now as per Image)
+            toggleTheme() {
+                alert("Settings menu coming soon!");
+            },
+
+            initTheme() {
+                // Fixed dark theme initialization
+            },
+
+            // CODE EXECUTION
+            async runCode() {
+                const code = document.getElementById('code-input').value;
+                const lang = this.getCurrentLanguage();
+                const outContainer = document.getElementById('console-output');
+
+                this.setTab('results');
+                this.showResultSubTab('output');
+
+                outContainer.innerText = `> Initializing environment for ${lang} execution...\n`;
+
+                try {
+                    const languageMap = {
+                        'python': 'python',
+                        'javascript': 'javascript',
+                        'java': 'java',
+                        'c': 'c',
+                        'html': 'html'
+                    };
+
+                    if (lang === 'html') {
+                        const blob = new Blob([code], { type: 'text/html' });
+                        const url = URL.createObjectURL(blob);
+                        window.open(url, '_blank');
+                        outContainer.innerText = `> HTML preview opened in new tab\n> Process finished with exit code 0`;
+                        return;
+                    }
+
+                    const pistonLang = languageMap[lang];
+                    const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            language: pistonLang,
+                            version: '*',
+                            files: [{ content: code }]
+                        })
+                    });
+
+                    if (!response.ok) throw new Error(`Execution Service Unavailable (${response.status})`);
+
+                    const result = await response.json();
+                    let displayOutput = `> Analysis complete. Execution results for ${lang}:\n\n`;
+
+                    if (result.run) {
+                        if (result.run.stdout) displayOutput += `=== STDOUT ===\n${result.run.stdout}\n`;
+                        if (result.run.stderr) displayOutput += `\n=== STDERR ===\n${result.run.stderr}\n`;
+                        if (!result.run.stdout && !result.run.stderr) displayOutput += `> No output captured from program`;
+                    } else {
+                        displayOutput += `> Execution finished with no data returned`;
+                    }
+
+                    outContainer.innerText = displayOutput;
+                } catch (error) {
+                    outContainer.innerText = `> Runtime Error: ${error.message}\n> Please check your internet connection or code for syntax errors.`;
+                }
+            },
+
+            // AI FIX CODE (Improved Prompt)
+            async fixCode() {
+                const code = document.getElementById('code-input').value;
+                const lang = this.getCurrentLanguage();
+                const aiResult = document.getElementById('ai-result');
+                const aiExplanation = document.getElementById('ai-explanation');
+                const aiReasoning = document.getElementById('ai-reasoning-content');
+                const aiLoading = document.getElementById('ai-loading');
+
+                this.setTab('results');
+                this.showResultSubTab('ai');
+                aiLoading.classList.remove('hidden');
+                aiResult.innerHTML = '';
+                aiExplanation.innerHTML = '';
+
+                const startTime = performance.now();
+                try {
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ code, lang })
+                    });
+                    const endTime = performance.now();
+                    const latency = Math.round(endTime - startTime);
+
+                    if (!response.ok) {
+                        const errData = await response.json();
+                        const errorMsg = errData.error || `AI Service Error (${response.status})`;
+                        const errorDetail = errData.details ? `<br><span class="opacity-70 mt-2 block">Details: ${errData.details}</span>` : '';
+                        throw new Error(errorMsg + errorDetail);
+                    }
+
+                    const data = await response.json();
+                    const aiText = data.result;
+                    const modelUsed = data.model || 'Gemini';
+                    const fallbacks = data.fallbacks || 0;
+
+                    // Helper to extract sections based on headers
+                    const getSection = (text, header) => {
+                        const regex = new RegExp(`## ${header}([\\s\\S]*?)(?=##|$)`, 'i');
+                        const match = text.match(regex);
+                        return match ? match[1].trim() : "";
+                    };
+
+                    const issuesText = getSection(aiText, "Issues Found");
+                    const fixedCodeSection = getSection(aiText, "Fixed Code");
+                    const explanationText = getSection(aiText, "Explanation");
+
+                    // Robust extraction of the actual code block
+                    const codeBlockRegex = /```(?:\w+)?\s*([\s\S]*?)```/;
+                    const codeMatch = fixedCodeSection.match(codeBlockRegex) || aiText.match(codeBlockRegex);
+                    const fixedCode = codeMatch ? codeMatch[1].trim() : (fixedCodeSection || aiText);
+
+                    this.state.fixedCode = fixedCode;
+
+                    aiLoading.classList.add('hidden');
+
+                    // Update UI Stats
+                    if (document.getElementById('stat-latency')) {
+                        document.getElementById('stat-latency').innerText = latency;
+                        document.getElementById('stat-tokens').innerText = Math.round(aiText.length / 4);
+                        const issuesCount = (issuesText.match(/^[*-]|\d+\./gm) || []).length;
+                        document.getElementById('stat-issues').innerText = issuesCount || "0";
+
+                        const execLog = document.getElementById('execution-log');
+                        if (execLog) {
+                            execLog.innerHTML = `
+                                <div class="flex gap-4"><span class="text-brand-primary">[INFO]</span> Request sent to ${modelUsed}</div>
+                                <div class="flex gap-4"><span class="text-brand-primary">[INFO]</span> Latency: ${latency}ms</div>
+                                <div class="flex gap-4"><span class="text-emerald-500">[SUCCESS]</span> Received ${aiText.length} bytes</div>
+                                <div class="flex gap-4"><span class="text-brand-primary">[INFO]</span> Parsed ${issuesCount} potential issues</div>
+                            `;
+                        }
+                    }
+
+                    // Model Badge
+                    const modelBadge = `<div class="mb-4 flex items-center gap-2">
+                        <span class="px-2 py-1 bg-brand-primary/10 text-brand-primary text-[10px] font-bold rounded uppercase tracking-widest border border-brand-primary/20">
+                            <i class="fa-solid fa-microchip mr-1"></i> ${modelUsed}
+                        </span>
+                        ${fallbacks > 0 ? `<span class="px-2 py-1 bg-amber-500/10 text-amber-500 text-[10px] font-bold rounded uppercase tracking-widest border border-amber-500/20">
+                            <i class="fa-solid fa-redo mr-1"></i> ${fallbacks} Fallbacks
+                        </span>` : ''}
+                    </div>`;
+
+                    // Update AI Result (Corrected Code Only)
+                    aiResult.innerHTML = modelBadge + marked.parse("### Corrected Code\n```" + lang + "\n" + fixedCode + "\n```");
+
+                    // Update Explanation Area
+                    aiExplanation.innerHTML = marked.parse(`## Analysis Summary\n\n### Issues Detected\n${issuesText || "No specific issues listed."}\n\n### Detailed Reasoning\n${explanationText || "No detailed reasoning provided."}`);
+
+                    // Update Reasoning Box (Brief summary)
+                    if (aiReasoning) {
+                        const summarySource = explanationText || issuesText || "Refining code structure and security protocols.";
+                        const snippets = summarySource.split('\n').filter(l => l.trim().length > 15).slice(0, 3);
+                        if (snippets.length > 0) {
+                            aiReasoning.innerHTML = snippets.map((s, i) => `
+                                <div class="flex gap-4">
+                                    <div class="w-5 h-5 rounded bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-bold text-brand-primary">${i + 1}</div>
+                                    <p class="text-[11px] text-brand-muted">${s.replace(/^[*-]\s*/, '').substring(0, 150)}${s.length > 150 ? '...' : ''}</p>
+                                </div>
+                            `).join('');
+                        }
+                    }
+
+                } catch (error) {
+                    aiLoading.classList.add('hidden');
+                    aiResult.innerHTML = `<div class="p-6 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500">
+                        <h4 class="font-bold flex items-center gap-2 mb-2"><i class="fa-solid fa-triangle-exclamation"></i> Analysis Error</h4>
+                        <p class="text-xs">${error.message}. If this persists, please check your project configuration.</p>
+                    </div>`;
+                }
+            },
+
+            // DOWNLOAD CODE FILE
+            async downloadPDF() {
+                const code = document.getElementById('code-input').value;
+                const lang = document.getElementById('lang-select').value;
+                const filename = this.getFilenameForLanguage(lang);
+                const blob = new Blob([code], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            },
+
+            getFilenameForLanguage(lang) {
+                const extensions = { 'python': 'main.py', 'javascript': 'main.js', 'java': 'Main.java', 'c': 'main.c', 'html': 'index.html' };
+                return extensions[lang] || 'main.txt';
+            },
+
+            updateFilenameDisplay(lang) {
+                const filename = this.getFilenameForLanguage(lang);
+                document.getElementById('filename-display').innerText = filename;
+            },
+
+            applyFixedCode() {
+                if (!this.state.fixedCode) return alert('No fixed code available');
+
+                const editor = document.getElementById('code-input');
+                editor.value = this.state.fixedCode;
+                this.updateEditor();
+
+                // Switch back to editor
+                this.setTab('editor');
+
+                // Visual Feedback Notification
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-20 right-6 bg-brand-primary text-black px-6 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce';
+                notification.innerHTML = `
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span class="font-bold text-xs uppercase tracking-widest">AI Patch Applied Successfully!</span>
+                `;
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.classList.remove('animate-bounce');
+                    notification.classList.add('opacity-0', 'transition-opacity', 'duration-1000');
+                    setTimeout(() => notification.remove(), 1000);
+                }, 3000);
+            },
+
+            // Language Dropdown Functions
+            toggleLanguageDropdown() {
+                const dropdown = document.getElementById('lang-dropdown');
+                dropdown.classList.toggle('hidden');
+            },
+
+            selectLanguage(langValue, langDisplay) {
+                // Update display
+                document.getElementById('lang-select-display').innerText = langDisplay;
+
+                // Hide dropdown
+                document.getElementById('lang-dropdown').classList.add('hidden');
+
+                // Update current language state
+                this.state.currentLanguage = langValue;
+
+                // Clear editor and update filename
+                const editor = document.getElementById('code-input');
+                editor.value = "";
+                this.updateEditor();
+                this.updateFilenameDisplay(langValue);
+            },
+
+            getCurrentLanguage() {
+                return this.state.currentLanguage || 'python';
+            },
+
+            // SETTINGS FUNCTIONS
+
+            // Theme Management
+            setTheme(theme) {
+                this.state.settings.theme = theme;
+                const body = document.body;
+
+                if (theme === 'light') {
+                    body.classList.add('light-theme');
+                    body.classList.remove('dark-theme');
+                } else {
+                    body.classList.remove('light-theme');
+                    body.classList.add('dark-theme');
+                }
+
+                this.updateThemeButtons();
+                this.saveSettings();
+                this.showNotification(`${theme === 'light' ? 'Light' : 'Dark'} theme activated`, 'success');
+            },
+
+            updateThemeButtons() {
+                const darkBtn = document.querySelector('[onclick*="setTheme(\'dark\')"]');
+                const lightBtn = document.querySelector('[onclick*="setTheme(\'light\')"]');
+
+                if (this.state.settings.theme === 'dark') {
+                    if (darkBtn) {
+                        darkBtn.className = 'px-4 py-2 rounded-lg bg-brand-primary text-black text-xs font-bold';
+                    }
+                    if (lightBtn) {
+                        lightBtn.className = 'px-4 py-2 rounded-lg bg-white/5 text-brand-muted text-xs font-bold hover:bg-white/10 transition-all';
+                    }
+                } else {
+                    if (lightBtn) {
+                        lightBtn.className = 'px-4 py-2 rounded-lg bg-brand-primary text-black text-xs font-bold';
+                    }
+                    if (darkBtn) {
+                        darkBtn.className = 'px-4 py-2 rounded-lg bg-white/5 text-brand-muted text-xs font-bold hover:bg-white/10 transition-all';
+                    }
+                }
+            },
+
+            // Font Size Management
+            setFontSize(size) {
+                this.state.settings.fontSize = size;
+                const editor = document.getElementById('code-input');
+                if (editor) {
+                    editor.style.fontSize = size;
+                }
+                this.saveSettings();
+                this.showNotification('Font size updated to ' + size, 'success');
+            },
+
+            // Editor Preferences
+            toggleAutoSave(enabled) {
+                this.state.settings.autoSave = enabled;
+                this.saveSettings();
+                this.showNotification('Auto-save ' + (enabled ? 'enabled' : 'disabled'), 'success');
+            },
+
+            toggleLineNumbers(enabled) {
+                this.state.settings.lineNumbers = enabled;
+                const lineNumbersContainer = document.getElementById('line-numbers-container');
+                if (lineNumbersContainer) {
+                    lineNumbersContainer.style.display = enabled ? 'block' : 'none';
+                }
+                this.saveSettings();
+                this.showNotification('Line numbers ' + (enabled ? 'enabled' : 'disabled'), 'success');
+            },
+
+            setTabSize(size) {
+                this.state.settings.tabSize = size;
+                const editor = document.getElementById('code-input');
+                if (editor) {
+                    editor.style.tabSize = size;
+                }
+                this.saveSettings();
+                this.showNotification('Tab size set to ' + size + ' spaces', 'success');
+            },
+
+            // AI Configuration
+            setAIModel(model) {
+                this.state.settings.aiModel = model;
+                this.saveSettings();
+                this.showNotification('AI model changed to ' + model, 'success');
+            },
+
+            toggleAutoFix(enabled) {
+                this.state.settings.autoFix = enabled;
+                this.saveSettings();
+                this.showNotification('Auto-fix suggestions ' + (enabled ? 'enabled' : 'disabled'), 'success');
+            },
+
+            saveAPIKey() {
+                const input = document.querySelector('input[type="password"][placeholder*="API key"]');
+                if (input && input.value) {
+                    this.state.settings.apiKey = input.value;
+                    this.saveSettings();
+                    this.showNotification('API key saved successfully', 'success');
+                    input.value = '••••••••••••••••';
+                } else {
+                    this.showNotification('Please enter an API key', 'error');
+                }
+            },
+
+            // Settings Persistence
+            saveSettings() {
+                try {
+                    localStorage.setItem('codescanpro_settings', JSON.stringify(this.state.settings));
+                } catch (e) {
+                    console.error('Failed to save settings:', e);
+                }
+            },
+
+            loadSettings() {
+                try {
+                    const saved = localStorage.getItem('codescanpro_settings');
+                    if (saved) {
+                        const settings = JSON.parse(saved);
+                        this.state.settings = { ...this.state.settings, ...settings };
+                        this.applySettings();
+                    }
+                } catch (e) {
+                    console.error('Failed to load settings:', e);
+                }
+            },
+
+            applySettings() {
+                // Apply theme
+                const body = document.body;
+                if (this.state.settings.theme === 'light') {
+                    body.classList.add('light-theme');
+                    body.classList.remove('dark-theme');
+                } else {
+                    body.classList.remove('light-theme');
+                    body.classList.add('dark-theme');
+                }
+
+                // Apply font size
+                const editor = document.getElementById('code-input');
+                if (editor && this.state.settings.fontSize) {
+                    editor.style.fontSize = this.state.settings.fontSize;
+                }
+
+                // Apply line numbers
+                const lineNumbersContainer = document.getElementById('line-numbers-container');
+                if (lineNumbersContainer) {
+                    lineNumbersContainer.style.display = this.state.settings.lineNumbers ? 'block' : 'none';
+                }
+
+                // Apply tab size
+                if (editor && this.state.settings.tabSize) {
+                    editor.style.tabSize = this.state.settings.tabSize;
+                }
+
+                // Update UI elements to reflect current settings
+                this.updateThemeButtons();
+            },
+
+            // Notification System
+            showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-emerald-500' : 'bg-rose-500';
+                notification.className = `fixed top-20 right-6 ${bgColor} text-white px-6 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce`;
+
+                const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+                notification.innerHTML = `
+                    <i class="fa-solid ${icon}"></i>
+                    <span class="font-bold text-xs uppercase tracking-widest">${message}</span>
+                `;
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.classList.remove('animate-bounce');
+                    notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                    setTimeout(() => notification.remove(), 500);
+                }, 2000);
+            },
+
+            // Edit Profile (placeholder)
+            editProfile() {
+                alert('Profile editing coming soon! This will allow you to update your name, email, and avatar.');
+            }
+        };
+
+        // GOOGLE SIGN-IN CALLBACK
+        function handleCredentialResponse(response) {
+            try {
+                const credential = response.credential;
+                const base64Url = credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                app.loginSuccess(JSON.parse(jsonPayload));
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        app.initTheme();
+        app.loadSettings();
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('lang-dropdown');
+            const btn = document.getElementById('lang-select-btn');
+            if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Initial Code Load
+        window.addEventListener('load', () => {
+            // Initialize Tabs & Editor
+            if (app.state.activeFile) {
+                app.switchTab(app.state.activeFile);
+            } else {
+                app.switchTab('auth'); // Fallback
+            }
+        });
+    </script>
+</body>
+
+</html>
