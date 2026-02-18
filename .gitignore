@@ -3,3 +3,5 @@
 
 .vercel
 .env*.local
+
+.vercel

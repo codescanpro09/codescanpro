@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Codescanpro - AI Editor</title>
+    <title>Codescanpro</title>
     <link rel="icon"
         href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1118'/%3E%3Cpath d='M16 4l12 6-12 6-12-6z' fill='%2300d4ff'/%3E%3Cpath d='M4 14l12 6 12-6' stroke='%2300d4ff' stroke-width='2' fill='none'/%3E%3Cpath d='M4 20l12 6 12-6' stroke='%2300d4ff' stroke-width='2' fill='none' opacity='0.6'/%3E%3C/svg%3E">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -677,7 +677,7 @@
             <div id="tab-editor" class="flex flex-col h-full w-full absolute inset-0">
                 <!-- Top Header: Project & Actions -->
                 <header
-                    class="h-14 flex items-center justify-between px-6 border-b border-brand-border shrink-0 bg-brand-panel/30">
+                    class="h-14 flex items-center justify-between px-6 border-b border-brand-border shrink-0 bg-brand-panel/30 relative z-50">
                     <div class="flex items-center gap-4">
                         <!-- Project Selector -->
                         <button
@@ -694,25 +694,60 @@
                                 <i class="fa-solid fa-chevron-down text-[10px]"></i>
                             </button>
                             <div id="lang-dropdown"
-                                class="hidden absolute top-full left-0 mt-2 bg-[#0b1118] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 min-w-[160px]">
+                                class="hidden absolute top-full left-0 mt-2 w-56 bg-[#131b26] border border-white/10 rounded-xl shadow-[0_20px_40px_-10px_rgba(0,0,0,0.6)] z-[100] py-1.5 animate-in fade-in zoom-in-95 duration-100 origin-top-left ring-1 ring-white/5 backdrop-blur-3xl">
+                                <div class="px-3 py-2 border-b border-white/5 mb-1">
+                                    <p
+                                        class="text-[10px] font-bold text-brand-muted uppercase tracking-wider opacity-60">
+                                        Select Mode</p>
+                                </div>
+
                                 <button onclick="app.selectLanguage('python', 'Python')"
-                                    class="w-full text-left px-4 py-3 text-xs font-bold text-brand-text hover:bg-brand-primary/10 hover:text-brand-primary transition-all border-b border-white/5">
+                                    class="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-3 group">
+                                    <div
+                                        class="w-6 h-6 rounded bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                                        <i
+                                            class="fa-brands fa-python text-blue-400 group-hover:scale-110 transition-transform text-[10px]"></i>
+                                    </div>
                                     Python
                                 </button>
+
                                 <button onclick="app.selectLanguage('javascript', 'JavaScript')"
-                                    class="w-full text-left px-4 py-3 text-xs font-bold text-brand-muted hover:bg-brand-primary/10 hover:text-brand-primary transition-all border-b border-white/5">
+                                    class="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-3 group">
+                                    <div
+                                        class="w-6 h-6 rounded bg-yellow-500/10 flex items-center justify-center group-hover:bg-yellow-500/20 transition-colors">
+                                        <i
+                                            class="fa-brands fa-js text-yellow-400 group-hover:scale-110 transition-transform text-[10px]"></i>
+                                    </div>
                                     JavaScript
                                 </button>
+
                                 <button onclick="app.selectLanguage('java', 'Java')"
-                                    class="w-full text-left px-4 py-3 text-xs font-bold text-brand-muted hover:bg-brand-primary/10 hover:text-brand-primary transition-all border-b border-white/5">
+                                    class="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-3 group">
+                                    <div
+                                        class="w-6 h-6 rounded bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
+                                        <i
+                                            class="fa-brands fa-java text-red-500 group-hover:scale-110 transition-transform text-[10px]"></i>
+                                    </div>
                                     Java
                                 </button>
+
                                 <button onclick="app.selectLanguage('c', 'C / C++')"
-                                    class="w-full text-left px-4 py-3 text-xs font-bold text-brand-muted hover:bg-brand-primary/10 hover:text-brand-primary transition-all border-b border-white/5">
+                                    class="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-3 group">
+                                    <div
+                                        class="w-6 h-6 rounded bg-blue-600/10 flex items-center justify-center group-hover:bg-blue-600/20 transition-colors">
+                                        <i
+                                            class="fa-solid fa-c text-blue-600 group-hover:scale-110 transition-transform text-[10px]"></i>
+                                    </div>
                                     C / C++
                                 </button>
+
                                 <button onclick="app.selectLanguage('html', 'HTML')"
-                                    class="w-full text-left px-4 py-3 text-xs font-bold text-brand-muted hover:bg-brand-primary/10 hover:text-brand-primary transition-all">
+                                    class="w-full text-left px-4 py-2.5 text-xs font-bold text-gray-400 hover:text-white hover:bg-white/5 transition-all flex items-center gap-3 group">
+                                    <div
+                                        class="w-6 h-6 rounded bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors">
+                                        <i
+                                            class="fa-brands fa-html5 text-orange-500 group-hover:scale-110 transition-transform text-[10px]"></i>
+                                    </div>
                                     HTML
                                 </button>
                             </div>
@@ -2203,7 +2238,11 @@
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ code, lang })
+                        body: JSON.stringify({
+                            code,
+                            lang,
+                            apiKey: this.state.settings.apiKey // Send API Key if set
+                        })
                     });
                     const endTime = performance.now();
                     const latency = Math.round(endTime - startTime);
@@ -2286,6 +2325,12 @@
                                 </div>
                             `).join('');
                         }
+                    }
+
+                    // Auto-fix if enabled
+                    if (this.state.settings.autoFix) {
+                        this.showNotification('Auto-applying AI fixes...', 'info');
+                        setTimeout(() => this.applyFixedCode(), 1000);
                     }
 
                 } catch (error) {
@@ -2471,6 +2516,12 @@
             saveAPIKey() {
                 const input = document.querySelector('input[type="password"][placeholder*="API key"]');
                 if (input && input.value) {
+                    // Prevent saving masked value
+                    if (input.value.includes('••••')) {
+                        this.showNotification('API key unchanged', 'info');
+                        return;
+                    }
+
                     this.state.settings.apiKey = input.value;
                     this.saveSettings();
                     this.showNotification('API key saved successfully', 'success');
@@ -2532,6 +2583,22 @@
 
                 // Update UI elements to reflect current settings
                 this.updateThemeButtons();
+
+                // Apply AI Settings to UI
+                const aiModelSelect = document.querySelector('select[onchange*="setAIModel"]');
+                if (aiModelSelect && this.state.settings.aiModel) {
+                    aiModelSelect.value = this.state.settings.aiModel;
+                }
+
+                const autoFixCheckbox = document.querySelector('input[onchange*="toggleAutoFix"]');
+                if (autoFixCheckbox) {
+                    autoFixCheckbox.checked = this.state.settings.autoFix;
+                }
+
+                const apiKeyInput = document.querySelector('input[placeholder*="API key"]');
+                if (apiKeyInput && this.state.settings.apiKey) {
+                    apiKeyInput.value = '••••••••••••••••';
+                }
             },
 
             // Notification System
