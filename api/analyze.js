@@ -1,19 +1,22 @@
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-/**
- * Optimized Model Pool for 2026
- * Using the latest Gemini 2.x and 3.x models for maximum speed and availability.
- */
 const MODELS = [
-    'gemini-2.0-flash',        // Fast & Modern
-    'gemini-2.5-flash',        // High performance
-    'gemini-2.0-flash-lite',   // Ultra-fast fallback
-    'gemini-3-flash-preview',  // Next-gen experimental
-    'gemini-2.0-flash-exp',    // Experimental stable
-    'gemini-1.5-flash'         // Classic reliable fallback
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-flash-latest',
+    'gemini-2.5-pro',
+    'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite-preview',
+    'gemini-3-pro-preview',
+    'gemini-2.0-flash-lite',
+    'gemini-flash-lite-latest'
 ];
 
 export default async function handler(req, res) {
+    const GEMINI_API_KEY = req.body.apiKey || process.env.GEMINI_API_KEY;
+
+    if (!GEMINI_API_KEY) {
+        return res.status(401).json({ error: 'No Gemini API Key provided. Please enter one in Settings.' });
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
